@@ -6,7 +6,7 @@ import React from "react";
  */
 export default function FileTree() {
   return (
-    <ul className="menu menu-xs bg-base-200 rounded-box max-w-xs w-full">
+    <ul className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
       <li>
         <a>
           <svg
