@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import HeaderPicker from "../components/HeaderPicker";
+import HeaderTitle from "../components/HeaderTitle";
 import { TreeProvider } from "../context/FileTreeContext";
 
 const geistSans = Geist({
@@ -30,7 +31,7 @@ export default function RootLayout({
         <TreeProvider>
           <nav className="navbar bg-base-200 border-b border-base-300">
             <div className="flex-1">
-              <span className="text-lg font-semibold px-2">Playground</span>
+              <HeaderTitle />
             </div>
             <div className="flex-none">
               <HeaderPicker />

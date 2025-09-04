@@ -7,7 +7,7 @@ export type TreeNode = {
   children?: TreeNode[];
 };
 
-export function buildTreeFromFiles(fileList: FileList): TreeNode[] {
+export function buildTreeFromFiles(fileList: FileList): { tree: TreeNode[]; rootName: string | null } {
   const root = new Map<string, any>();
   const files = Array.from(fileList);
 
@@ -53,15 +53,19 @@ export function buildTreeFromFiles(fileList: FileList): TreeNode[] {
   }
 
   const arr = mapToArray(root);
-  // Flatten the single selected root directory so its contents appear at the top level
+  let rootName: string | null = null;
+  let tree: TreeNode[] = arr;
+  // If there is a single root directory, use its name for the header and show its children at top level
   if (arr.length === 1 && arr[0].type === "folder") {
-    return arr[0].children ?? [];
+    rootName = arr[0].name;
+    tree = arr[0].children ?? [];
   }
-  return arr;
+  return { tree, rootName };
 }
 
 export type TreeContextType = {
   tree: TreeNode[] | null;
+  rootName: string | null;
   setTree: (t: TreeNode[] | null) => void;
   loadFromFiles: (files: FileList) => void;
 };
@@ -70,21 +74,24 @@ const TreeContext = createContext<TreeContextType | undefined>(undefined);
 
 export function TreeProvider({ children }: { children: React.ReactNode }) {
   const [tree, setTree] = useState<TreeNode[] | null>(null);
+  const [rootName, setRootName] = useState<string | null>(null);
 
   const loadFromFiles = (files: FileList) => {
     const hasDir = Array.from(files).some(
       (f) => (f as any).webkitRelativePath && (f as any).webkitRelativePath.includes("/")
     );
     if (hasDir) {
-      const t = buildTreeFromFiles(files);
-      setTree(t);
+      const res = buildTreeFromFiles(files);
+      setTree(res.tree);
+      setRootName(res.rootName);
     } else {
       // Only accept directories per requirements
       setTree(null);
+      setRootName(null);
     }
   };
 
-  const value = useMemo(() => ({ tree, setTree, loadFromFiles }), [tree]);
+  const value = useMemo(() => ({ tree, rootName, setTree, loadFromFiles }), [tree, rootName]);
 
   return <TreeContext.Provider value={value}>{children}</TreeContext.Provider>;
 }
