@@ -5,6 +5,8 @@ export type TreeNode = {
   name: string;
   type: "folder" | "file";
   children?: TreeNode[];
+  file?: File;
+  path?: string;
 };
 
 export function buildTreeFromFiles(fileList: FileList): { tree: TreeNode[]; rootName: string | null } {
@@ -17,21 +19,23 @@ export function buildTreeFromFiles(fileList: FileList): { tree: TreeNode[]; root
     if (parts.length === 0) continue;
 
     let current: Map<string, any> = root;
+    let currentPath = "";
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       const isLast = i === parts.length - 1;
 
       if (isLast) {
-        if (!current.has(part)) {
-          current.set(part, { name: part, type: "file" });
-        }
+        const filePath = currentPath ? `${currentPath}/${part}` : part;
+        current.set(part, { name: part, type: "file", file, _path: filePath });
       } else {
         let node = current.get(part);
         if (!node || node.type !== "folder") {
-          node = { name: part, type: "folder", _children: new Map<string, any>() };
+          const folderPath = currentPath ? `${currentPath}/${part}` : part;
+          node = { name: part, type: "folder", _children: new Map<string, any>(), _path: folderPath };
           current.set(part, node);
         }
         current = node._children;
+        currentPath = currentPath ? `${currentPath}/${part}` : part;
       }
     }
   }
@@ -40,9 +44,9 @@ export function buildTreeFromFiles(fileList: FileList): { tree: TreeNode[]; root
     const arr: TreeNode[] = [];
     for (const [, node] of map) {
       if (node.type === "folder") {
-        arr.push({ name: node.name, type: "folder", children: mapToArray(node._children) });
+        arr.push({ name: node.name, type: "folder", children: mapToArray(node._children), path: node._path });
       } else {
-        arr.push({ name: node.name, type: "file" });
+        arr.push({ name: node.name, type: "file", file: node.file, path: node._path });
       }
     }
     arr.sort((a, b) => {
@@ -59,6 +63,16 @@ export function buildTreeFromFiles(fileList: FileList): { tree: TreeNode[]; root
   if (arr.length === 1 && arr[0].type === "folder") {
     rootName = arr[0].name;
     tree = arr[0].children ?? [];
+
+    // Trim the root folder name from all path values
+    const prefix = rootName + "/";
+    const trimPrefix = (nodes: TreeNode[]): TreeNode[] =>
+      nodes.map((n) => ({
+        ...n,
+        path: n.path && n.path.startsWith(prefix) ? n.path.slice(prefix.length) : n.path,
+        children: n.children ? trimPrefix(n.children) : undefined,
+      }));
+    tree = trimPrefix(tree);
   }
   return { tree, rootName };
 }
@@ -66,8 +80,10 @@ export function buildTreeFromFiles(fileList: FileList): { tree: TreeNode[]; root
 export type TreeContextType = {
   tree: TreeNode[] | null;
   rootName: string | null;
+  selectedFile: File | null;
   setTree: (t: TreeNode[] | null) => void;
   loadFromFiles: (files: FileList) => void;
+  selectFile: (file: File | null) => void;
 };
 
 const TreeContext = createContext<TreeContextType | undefined>(undefined);
@@ -75,6 +91,7 @@ const TreeContext = createContext<TreeContextType | undefined>(undefined);
 export function TreeProvider({ children }: { children: React.ReactNode }) {
   const [tree, setTree] = useState<TreeNode[] | null>(null);
   const [rootName, setRootName] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const loadFromFiles = (files: FileList) => {
     const hasDir = Array.from(files).some(
@@ -84,14 +101,21 @@ export function TreeProvider({ children }: { children: React.ReactNode }) {
       const res = buildTreeFromFiles(files);
       setTree(res.tree);
       setRootName(res.rootName);
+      setSelectedFile(null);
     } else {
       // Only accept directories per requirements
       setTree(null);
       setRootName(null);
+      setSelectedFile(null);
     }
   };
 
-  const value = useMemo(() => ({ tree, rootName, setTree, loadFromFiles }), [tree, rootName]);
+  const selectFile = (file: File | null) => setSelectedFile(file);
+
+  const value = useMemo(
+    () => ({ tree, rootName, selectedFile, setTree, loadFromFiles, selectFile }),
+    [tree, rootName, selectedFile]
+  );
 
   return <TreeContext.Provider value={value}>{children}</TreeContext.Provider>;
 }

@@ -2,18 +2,18 @@
 import React from "react";
 import { TreeNode, useTree } from "../context/FileTreeContext";
 
-function TreeView({ nodes }: { nodes: TreeNode[] }) {
+function TreeView({ nodes, onFileClick }: { nodes: TreeNode[]; onFileClick: (f: File) => void }) {
   return (
     <ul>
       {nodes.map((node) => (
-        <li key={node.name}>
+        <li key={node.path || node.name}>
           {node.type === "folder" ? (
             <details>
               <summary>{node.name}</summary>
-              {node.children && node.children.length > 0 && <TreeView nodes={node.children} />}
+              {node.children && node.children.length > 0 && <TreeView nodes={node.children} onFileClick={onFileClick} />}
             </details>
           ) : (
-            <a>{node.name}</a>
+            <a className="cursor-pointer" onClick={() => node.file && onFileClick(node.file)}>{node.name}</a>
           )}
         </li>
       ))}
@@ -22,7 +22,7 @@ function TreeView({ nodes }: { nodes: TreeNode[] }) {
 }
 
 export default function FileTree() {
-  const { tree } = useTree();
+  const { tree, selectFile } = useTree();
 
   if (!tree) {
     return (
@@ -32,7 +32,7 @@ export default function FileTree() {
 
   return (
     <ul className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
-      <TreeView nodes={tree} />
+      <TreeView nodes={tree} onFileClick={selectFile} />
     </ul>
   );
 }
