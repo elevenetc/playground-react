@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import HeaderPicker from "../components/HeaderPicker";
+import { TreeProvider } from "../context/FileTreeContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -25,13 +27,17 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-screen">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col`}>
-        <nav className="navbar bg-base-200 border-b border-base-300">
-          <div className="flex-1">
-            <span className="text-lg font-semibold px-2">Playground</span>
-          </div>
-          <div className="flex-none"></div>
-        </nav>
-        <div className="flex-1 min-h-0">{children}</div>
+        <TreeProvider>
+          <nav className="navbar bg-base-200 border-b border-base-300">
+            <div className="flex-1">
+              <span className="text-lg font-semibold px-2">Playground</span>
+            </div>
+            <div className="flex-none">
+              <HeaderPicker />
+            </div>
+          </nav>
+          <div className="flex-1 min-h-0">{children}</div>
+        </TreeProvider>
       </body>
     </html>
   );
