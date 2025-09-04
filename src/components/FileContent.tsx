@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useTree } from "../context/FileTreeContext";
 
-const ONE_MB = 1_000_000; // 1MB threshold
+const FILE_SIZE_LIMIT = 10_000_000; // 10MB threshold
 
 async function isProbablyBinary(file: File): Promise<boolean> {
   if (file.type && file.type.startsWith("text/")) return false;
@@ -34,7 +34,7 @@ export default function FileContent() {
         setContent("");
         return;
       }
-      if (selectedFile.size > ONE_MB) {
+      if (selectedFile.size > FILE_SIZE_LIMIT) {
         setStatus("too_big");
         setContent("");
         return;
