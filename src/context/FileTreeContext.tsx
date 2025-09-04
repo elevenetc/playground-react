@@ -52,7 +52,12 @@ export function buildTreeFromFiles(fileList: FileList): TreeNode[] {
     return arr;
   }
 
-  return mapToArray(root);
+  const arr = mapToArray(root);
+  // Flatten the single selected root directory so its contents appear at the top level
+  if (arr.length === 1 && arr[0].type === "folder") {
+    return arr[0].children ?? [];
+  }
+  return arr;
 }
 
 export type TreeContextType = {

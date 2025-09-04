@@ -32,12 +32,7 @@ export default function FileTree() {
 
   return (
     <ul className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
-      <li>
-        <details>
-          <summary>Selected folder</summary>
-          <TreeView nodes={tree} />
-        </details>
-      </li>
+      <TreeView nodes={tree} />
     </ul>
   );
 }
