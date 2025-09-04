@@ -21,6 +21,28 @@ async function isProbablyBinary(file: File): Promise<boolean> {
   return binaryLike / bytes.length > 0.3 || bytes.includes(0);
 }
 
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function highlightJsonBrackets(text: string): string {
+  const escaped = escapeHtml(text);
+  // First, highlight JSON object keys: "&quot;key&quot;:" → wrap only the key text
+  const withKeys = escaped.replace(/&quot;([\s\S]*?)&quot;(\s*:\s*)/g, (_m, key, after) => {
+    return `&quot;<span class=\"text-accent\">${key}</span>&quot;${after}`;
+  });
+  // Then, highlight curly braces and square brackets for basic readability
+  return withKeys.replace(/[{}\[\]]/g, (m) => {
+    if (m === "{" || m === "}") return `<span class=\"text-primary\">${m}</span>`;
+    return `<span class=\"text-secondary\">${m}</span>`; // [ or ]
+  });
+}
+
 export default function FileContent() {
   const { selectedFile } = useTree();
   const [content, setContent] = useState<string>("");
@@ -58,6 +80,10 @@ export default function FileContent() {
     };
   }, [selectedFile]);
 
+  const isJson = !!selectedFile && (
+    selectedFile.type === "application/json" || /\.json$/i.test(selectedFile.name)
+  );
+
   return (
     <div className="h-full p-4 overflow-hidden">
       {status === "idle" && <div className="text-base-content/70">No file selected.</div>}
@@ -65,9 +91,14 @@ export default function FileContent() {
       {status === "binary" && <div className="text-base-content/70">Binary file. Content can't be shown.</div>}
       {status === "loading" && <div className="text-base-content/70">Loading…</div>}
       {status === "ready" && (
-        <pre className="h-full w-full overflow-auto whitespace-pre-wrap text-sm font-mono">
-          {content}
-        </pre>
+        isJson ? (
+          <pre
+            className="h-full w-full overflow-auto whitespace-pre-wrap text-sm font-mono"
+            dangerouslySetInnerHTML={{ __html: highlightJsonBrackets(content) }}
+          />
+        ) : (
+          <pre className="h-full w-full overflow-auto whitespace-pre-wrap text-sm font-mono">{content}</pre>
+        )
       )}
     </div>
   );
