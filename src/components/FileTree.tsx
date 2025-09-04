@@ -61,7 +61,7 @@ function TreeView({ nodes }: { nodes: TreeNode[] }) {
       {nodes.map((node) => (
         <li key={node.name}>
           {node.type === "folder" ? (
-            <details open>
+            <details>
               <summary>{node.name}</summary>
               {node.children && node.children.length > 0 && <TreeView nodes={node.children} />}
             </details>
@@ -115,7 +115,7 @@ export default function FileTree() {
   return (
     <ul className="menu bg-base-200 text-base-content min-h-full w-80 p-4">
       <li>
-        <details open>
+        <details>
           <summary>Selected folder</summary>
           <TreeView nodes={tree} />
         </details>
