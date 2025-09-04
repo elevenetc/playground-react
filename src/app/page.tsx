@@ -14,7 +14,7 @@ export default function Home() {
           <FileTree />
         </div>
       </aside>
-      <main className="flex-1 min-w-0">
+      <main className="flex-1 min-w-0 h-full">
         <FileContent />
       </main>
     </div>

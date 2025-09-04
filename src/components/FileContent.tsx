@@ -2,7 +2,7 @@ import React from "react";
 
 export default function FileContent() {
   return (
-    <div className="p-4">
+    <div className="h-full p-4">
       file content
     </div>
   );
