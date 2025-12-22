@@ -1,8 +1,7 @@
 import type {Metadata} from "next";
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
-import PanelComponent, {PanelAlignment} from "@/components/panelComponent/PanelComponent";
-import Button from "@/components/button/Button";
+import CloudFunctions from "@/components/cloudFunctions/CloudFunctions";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -26,24 +25,9 @@ export default function RootLayout() {
         {/*<FileViewerApp />*/}
         {/* <AnimatedButtonApp />*/}
         {/*<FunctionContainer />*/}
-        <PanelComponent alignment={PanelAlignment.LEFT}>
-            <div className="flex flex-col p-4">
-                <Button>Foo</Button>
-                <Button>Bar</Button>
-            </div>
-        </PanelComponent>
-        <PanelComponent alignment={PanelAlignment.RIGHT} emptyView={EmptyFunctionEditorView()}>
-            {/*<div>Foo</div>*/}
-        </PanelComponent>
+        {CloudFunctions()}
         </body>
         </html>
     );
 }
 
-function EmptyFunctionEditorView() {
-    return <div className="flex flex-row">
-        <div>Select or</div>
-        <Button inline={true}>create</Button>
-        <div>a function</div>
-    </div>
-}
