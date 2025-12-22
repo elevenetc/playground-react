@@ -6,7 +6,7 @@ const basePanel = style({
     backgroundColor: bgColor,
     position: 'fixed',
     padding: '1rem',
-    margin: '1rem',
+    margin: '0.5rem',
     borderRadius: '0.5rem',
 });
 
@@ -45,4 +45,5 @@ export const emptyViewContainer = style({
     alignItems: 'center',
     width: '100%',
     height: '100%',
+    cursor: 'default',
 });

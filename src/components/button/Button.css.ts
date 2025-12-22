@@ -4,7 +4,7 @@ export const button = style({
   backgroundColor: 'transparent',
   border: 'none',
   cursor: 'pointer',
-  padding: '0.5rem 1rem',
+  padding: '0.25rem 0.5rem',
   borderRadius: '0.25rem',
   transition: 'background-color 0.2s',
   ':hover': {
