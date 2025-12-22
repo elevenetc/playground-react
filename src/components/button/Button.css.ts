@@ -21,3 +21,27 @@ export const button = style({
     },
   },
 });
+
+export const inlineButton = style({
+  backgroundColor: 'transparent',
+  border: 'none',
+  cursor: 'pointer',
+  padding: 0,
+  borderRadius: '0.25rem',
+  textDecoration: 'underline',
+  margin: '0 0.25rem',
+  transition: 'background-color 0.2s',
+  ':hover': {
+    backgroundColor: '#ef4444',
+  },
+  selectors: {
+    '&:disabled': {
+      color: '#6b7280',
+      cursor: 'default',
+      backgroundColor: 'transparent',
+    },
+    '&:disabled:hover': {
+      backgroundColor: 'transparent',
+    },
+  },
+});
