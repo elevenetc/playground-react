@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { useTree } from "../context/FileTreeContext";
+import { useTree } from "./FileTreeContext";
 
 const FILE_SIZE_LIMIT = 10_000_000; // 10MB threshold
 

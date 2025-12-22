@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { useTree } from "../context/FileTreeContext";
+import { useTree } from "./FileTreeContext";
 
 export default function HeaderTitle() {
   const { rootName, tree } = useTree();

@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { TreeNode, useTree } from "../context/FileTreeContext";
+import { TreeNode, useTree } from "./FileTreeContext";
 
 function TreeView({ nodes, onFileClick }: { nodes: TreeNode[]; onFileClick: (f: File) => void }) {
   return (

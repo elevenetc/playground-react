@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useRef } from "react";
-import { useTree } from "../context/FileTreeContext";
+import { useTree } from "./FileTreeContext";
 
 export default function HeaderPicker() {
   const { loadFromFiles } = useTree();
