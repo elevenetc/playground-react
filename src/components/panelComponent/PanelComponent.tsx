@@ -9,11 +9,12 @@ export enum PanelAlignment {
 
 type PanelComponentProps = {
     alignment: PanelAlignment;
+    children?: React.ReactNode;
 };
 
-export default function PanelComponent({ alignment }: PanelComponentProps) {
+export default function PanelComponent({ alignment, children }: PanelComponentProps) {
     const variantClass = panelVariants[alignment];
     return <div className={`${panelComponentCss} ${variantClass}`}>
-        PanelComponent: {alignment}
+        {children}
     </div>
 }
