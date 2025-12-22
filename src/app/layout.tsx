@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import HeaderPicker from "../components/HeaderPicker";
-import HeaderTitle from "../components/HeaderTitle";
-import { TreeProvider } from "../context/FileTreeContext";
+import FileViewerApp from "../components/fileViewer/FileViewerApp";
+import AnimatedButtonApp from "../components/animatedButton/AnimatedButtonApp";
+import PanelComponent, { PanelAlignment } from "@/components/panelComponent/PanelComponent";
+import FunctionContainer from "@/components/functionContainer/FunctionContainer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,17 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-screen">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen flex flex-col`}>
-        <TreeProvider>
-          <nav className="navbar bg-base-200 border-b border-base-300">
-            <div className="flex-1">
-              <HeaderTitle />
-            </div>
-            <div className="flex-none">
-              <HeaderPicker />
-            </div>
-          </nav>
-          <div className="flex-1 min-h-0">{children}</div>
-        </TreeProvider>
+        {/*<FileViewerApp />*/}
+        {/* <AnimatedButtonApp />*/}
+        <FunctionContainer />
+        {/*<PanelComponent alignment={PanelAlignment.LEFT} />*/}
       </body>
     </html>
   );
