@@ -1,4 +1,4 @@
-import {panelComponentCss, panelVariants} from "@/components/panelComponent/PanelComponent.css";
+import {panelComponentCss, panelVariants, emptyViewContainer} from "@/components/panelComponent/PanelComponent.css";
 
 export enum PanelAlignment {
     TOP = "top",
@@ -10,11 +10,12 @@ export enum PanelAlignment {
 type PanelComponentProps = {
     alignment: PanelAlignment;
     children?: React.ReactNode;
+    emptyView?: React.ReactNode;
 };
 
-export default function PanelComponent({ alignment, children }: PanelComponentProps) {
+export default function PanelComponent({ alignment, children, emptyView }: PanelComponentProps) {
     const variantClass = panelVariants[alignment];
     return <div className={`${panelComponentCss} ${variantClass}`}>
-        {children}
+        {children || (emptyView && <div className={emptyViewContainer}>{emptyView}</div>)}
     </div>
 }

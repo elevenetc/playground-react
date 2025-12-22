@@ -21,7 +21,7 @@ export const panelVariants = styleVariants({
         top: 0,
         right: 0,
         bottom: 0,
-        width: '200px',
+        width: '250px',
     },
     bottom: {
         bottom: 0,
@@ -33,8 +33,16 @@ export const panelVariants = styleVariants({
         top: 0,
         left: 0,
         bottom: 0,
-        width: '200px',
+        width: '250px',
     },
 });
 
 export const panelComponentCss = basePanel;
+
+export const emptyViewContainer = style({
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+    height: '100%',
+});
