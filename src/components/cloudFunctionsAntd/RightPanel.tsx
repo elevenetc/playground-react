@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-import { Button, Modal } from 'antd';
+import { Button } from 'antd';
+import CreateFunctionModal from './CreateFunctionModal';
 
 export default function RightPanel() {
     const [open, setOpen] = useState(false);
@@ -30,19 +31,11 @@ export default function RightPanel() {
                 {' '}a function
             </div>
 
-            <Modal
-                title="New Function"
+            <CreateFunctionModal
                 open={open}
-                onOk={handleCreate}
-                onCancel={() => setOpen(false)}
-                transitionName=""
-                width={600}
-                style={{ minHeight: 350 }}
-            >
-                <div style={{ padding: '20px 0' }}>
-                    Enter function details here...
-                </div>
-            </Modal>
+                onClose={() => setOpen(false)}
+                onCreate={handleCreate}
+            />
         </div>
     );
 }
