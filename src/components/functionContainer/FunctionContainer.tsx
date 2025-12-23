@@ -23,6 +23,7 @@ export default function FunctionContainer({ functionData, onClick }: FunctionCon
     };
 
     const defaultData = new FunctionData(
+        'default',
         'calculateSum',
         'Int',
         [['a', 'Int'], ['b', 'Int']],
