@@ -3,54 +3,36 @@ import {FunctionNodeData} from './FunctionNode';
 import {FunctionData} from './FunctionData';
 import {FunctionCallGraph} from './FunctionCallGraph';
 
-const processInputData = new FunctionData(
-    '1',
-    'processInput',
-    'String',
-    [['input', 'String'], ['count', 'Int']],
-    'fun processInput(input: String, count: Int): String { return input.trim() }'
-);
+const processInputData = new FunctionData('1', 'start', [], 'String', 'fun start(): String { return "foo" }');
 
-const validateDataData = new FunctionData(
-    '2',
-    'validateData',
-    'Boolean',
-    [['data', 'String']],
-    'fun validateData(data: String): Boolean { return data.isNotEmpty() }'
-);
+const validateDataData = new FunctionData('2', 'validateData', [['data', 'String'], ['dataStr', 'String'], ['dataInt', 'Int']], 'Boolean', 'fun validateData(data: String, dataStr: Stringm dataInt: Int): Boolean { return data.isNotEmpty() }');
 
-const transformDataData = new FunctionData(
-    '3',
-    'transformData',
-    'List<Int>',
-    [['data', 'String']],
-    'fun transformData(data: String): List<Int> { return data.split(",").map { it.toInt() } }'
-);
+const transformDataData = new FunctionData('3', 'transformData', [['validationResult', 'Boolean']], 'List<Int>', 'fun transformData(validationResult: Boolean): List<Int> { return listOf(1, 2, 3) }');
 
 export const demoNodes: Node<FunctionNodeData>[] = [
     {
         id: '1',
         type: 'functionNode',
-        data: { functionData: processInputData },
-        position: { x: 250, y: 50 },
+        data: {functionData: processInputData},
+        position: {x: 50, y: 250},
     },
     {
         id: '2',
         type: 'functionNode',
-        data: { functionData: validateDataData },
-        position: {x: 250, y: 220},
+        data: {functionData: validateDataData},
+        position: {x: 400, y: 250},
     },
     {
         id: '3',
         type: 'functionNode',
         data: {functionData: transformDataData},
-        position: {x: 250, y: 390},
+        position: {x: 750, y: 250},
     }
 ];
 
 export const demoEdges: Edge[] = [
-    { id: 'e1-2', source: '1', target: '2' },
-    {id: 'e2-3', source: '2', target: '3'},
+    {id: 'e1-2', source: '1', target: '2', sourceHandle: 'output', targetHandle: 'input-0'},
+    {id: 'e2-3', source: '2', target: '3', sourceHandle: 'output', targetHandle: 'input-0'},
 ];
 
 export const demoGraph = new FunctionCallGraph();

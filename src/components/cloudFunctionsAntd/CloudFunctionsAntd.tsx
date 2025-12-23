@@ -1,39 +1,45 @@
 "use client";
 
-import {useEffect, useState} from 'react';
-import {Node, ReactFlow} from 'reactflow';
-import 'reactflow/dist/style.css';
+import {useCallback, useEffect, useState} from 'react';
+import {applyEdgeChanges, applyNodeChanges, Edge, EdgeChange, Node, NodeChange} from 'reactflow';
 import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
-import FunctionNode, {FunctionNodeData} from './FunctionNode';
+import {FunctionNodeData} from './FunctionNode';
 import {demoEdges, demoGraph, demoNodes} from './demoNodes';
 import {FakeFunctionRunner} from './FakeFunctionRunner';
-import {FunctionRunnerContext} from './FunctionRunnerContext';
+import {FunctionCallGraphContext, GraphState} from './FunctionRunnerContext';
 import {FunctionData} from './FunctionData';
-
-const nodeTypes = {
-    functionNode: FunctionNode,
-};
+import {ConnectionController} from './ConnectionController';
+import FunctionsFlowComponent from './FunctionsFlowComponent';
 
 export default function CloudFunctionsAntd() {
     const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>(demoNodes);
+    const [edges, setEdges] = useState<Edge[]>(demoEdges);
     const [runner] = useState(() => new FakeFunctionRunner(demoGraph));
     const [selectedFunction, setSelectedFunction] = useState<FunctionData | null>(null);
-    const [isRunning, setIsRunning] = useState(false);
+    const [state, setState] = useState<GraphState>('idle');
+    const [connectionController] = useState(() => new ConnectionController(demoGraph));
+    const [connectingInfo, setConnectingInfo] = useState<{
+        sourceFunctionId: string;
+        sourceHandleId: string
+    } | null>(null);
+
+    const onNodesChange = useCallback(
+        (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
+        []
+    );
+
+    const onEdgesChange = useCallback(
+        (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
+        []
+    );
 
     useEffect(() => {
         runner.subscribeOnFunctionStateChange((event) => {
             const func = demoGraph.getFunction(event.functionId);
             if (func) {
                 // Create new FunctionData instance with updated state
-                const updatedFunc = new FunctionData(
-                    func.id,
-                    func.name,
-                    func.returnType,
-                    func.arguments,
-                    func.sourceCode,
-                    event.newState
-                );
+                const updatedFunc = new FunctionData(func.id, func.name, func.arguments, func.returnType, func.sourceCode, event.newState);
 
                 // Update nodes
                 setNodes((prevNodes) => {
@@ -54,7 +60,7 @@ export default function CloudFunctionsAntd() {
                     const hasRunningFunction = newNodes.some(
                         node => node.data.functionData.state === 'running'
                     );
-                    setIsRunning(hasRunningFunction);
+                    setState(hasRunningFunction ? 'running' : 'idle');
 
                     return newNodes;
                 });
@@ -83,22 +89,27 @@ export default function CloudFunctionsAntd() {
     };
 
     return (
-        <FunctionRunnerContext.Provider value={{
+        <FunctionCallGraphContext.Provider value={{
             runFunction: handleRunFunction,
             selectFunction: handleSelectFunction,
             selectedFunctionId: selectedFunction?.id ?? null,
-            isRunning
+            state,
+            connectionController,
+            connectingInfo
         }}>
             <div className="fixed inset-0">
                 {/* ReactFlow Background */}
                 <div className="absolute inset-0 bg-gray-900">
-                    <ReactFlow
+                    <FunctionsFlowComponent
                         nodes={nodes}
-                        edges={demoEdges}
-                        nodeTypes={nodeTypes}
+                        edges={edges}
+                        setEdges={setEdges}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        connectionController={connectionController}
+                        setState={setState}
+                        setConnectingInfo={setConnectingInfo}
                         onPaneClick={handlePaneClick}
-                        fitView
-                        fitViewOptions={{padding: 0.2}}
                     />
                 </div>
 
@@ -112,6 +123,6 @@ export default function CloudFunctionsAntd() {
                     <RightPanel selectedFunction={selectedFunction}/>
                 </div>
             </div>
-        </FunctionRunnerContext.Provider>
+        </FunctionCallGraphContext.Provider>
     );
 }

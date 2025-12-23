@@ -1,6 +1,6 @@
-import { FakeFunctionRunner, FunctionStateChangeEvent } from './FakeFunctionRunner';
-import { FunctionCallGraph } from './FunctionCallGraph';
-import { FunctionData } from './FunctionData';
+import {FakeFunctionRunner, FunctionStateChangeEvent} from './FakeFunctionRunner';
+import {FunctionCallGraph} from './FunctionCallGraph';
+import {FunctionData} from './FunctionData';
 
 describe('FakeFunctionRunner', () => {
     let graph: FunctionCallGraph;
@@ -11,9 +11,9 @@ describe('FakeFunctionRunner', () => {
 
     beforeEach(() => {
         graph = new FunctionCallGraph();
-        func1 = new FunctionData('1', 'foo', 'Int', [], 'fun foo(): Int { return 1 }', 'idle');
-        func2 = new FunctionData('2', 'bar', 'String', [['x', 'Int']], 'fun bar(x: Int): String { return x.toString() }', 'idle');
-        func3 = new FunctionData('3', 'baz', 'Unit', [], 'fun baz() {}', 'idle');
+        func1 = new FunctionData('1', 'foo', [], 'Int', 'fun foo(): Int { return 1 }', 'idle');
+        func2 = new FunctionData('2', 'bar', [['x', 'Int']], 'String', 'fun bar(x: Int): String { return x.toString() }', 'idle');
+        func3 = new FunctionData('3', 'baz', [], 'Unit', 'fun baz() {}', 'idle');
 
         graph.addFunction(func1);
         graph.addFunction(func2);

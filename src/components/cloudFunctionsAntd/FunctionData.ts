@@ -11,8 +11,8 @@ export class FunctionData {
     constructor(
         id: string,
         name: string,
-        returnType: string,
         args: Map<string, string> | [string, string][],
+        returnType: string,
         sourceCode: string,
         state: FunctionState = 'idle'
     ) {

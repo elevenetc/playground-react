@@ -5,7 +5,7 @@ import * as styles from './FunctionContainer.css';
 import {cssDebugValues, cssValues, DEBUG_CSS} from './FunctionContainer.css';
 import Button from '../button/Button';
 import {FunctionData} from '../cloudFunctionsAntd/FunctionData';
-import {useFunctionRunner} from '../cloudFunctionsAntd/FunctionRunnerContext';
+import {useFunctionCallGraph} from '../cloudFunctionsAntd/FunctionRunnerContext';
 
 const MAX_WIDTH = 300;
 const MAX_HEIGHT = 250;
@@ -20,34 +20,47 @@ type FunctionContainerProps = {
 };
 
 export default function FunctionContainer({functionData, functionId, onClick}: FunctionContainerProps) {
-    const runner = useFunctionRunner();
+    const graphContext = useFunctionCallGraph();
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (runner && functionData) {
-            runner.selectFunction(functionData);
+        if (graphContext && functionData) {
+            graphContext.selectFunction(functionData);
         }
         onClick?.();
     };
 
     const handleRunClick = (e?: React.MouseEvent) => {
         e?.stopPropagation();
-        if (functionId && runner) {
-            runner.runFunction(functionId);
+        if (functionId && graphContext) {
+            graphContext.runFunction(functionId);
         }
     };
 
-    const defaultData = new FunctionData(
-        'default',
-        'calculateSum',
-        'Int',
-        [['a', 'Int'], ['b', 'Int']],
-        'fun calculateSum(a: Int, b: Int): Int { return a + b }'
-    );
+    const defaultData = new FunctionData('default', 'calculateSum', [['a', 'Int'], ['b', 'Int']], 'Int', 'fun calculateSum(a: Int, b: Int): Int { return a + b }');
 
     const data = functionData || defaultData;
-    const isSelected = runner?.selectedFunctionId === functionId;
-    const isRunning = runner?.isRunning ?? false;
+    const isSelected = graphContext?.selectedFunctionId === functionId;
+    const isRunning = graphContext?.state === 'running';
+
+    const canBeConnected = () => {
+        if (!graphContext || !functionId || graphContext.state !== 'connecting' || !graphContext.connectingInfo) {
+            return true;
+        }
+
+        const {sourceFunctionId} = graphContext.connectingInfo;
+        const argumentCount = data.arguments.size;
+
+        for (let i = 0; i < argumentCount; i++) {
+            if (graphContext.connectionController.canBeConnected(sourceFunctionId, functionId, i)) {
+                return true;
+            }
+        }
+
+        return false;
+    };
+
+    const shouldDim = graphContext?.state === 'connecting' && !canBeConnected();
 
     const getBorderStyle = () => {
         if (isSelected) {
@@ -75,7 +88,9 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
             }),
             maxWidth: MAX_WIDTH,
             maxHeight: MAX_HEIGHT,
-            ...getBorderStyle()
+            ...getBorderStyle(),
+            opacity: shouldDim ? 0.3 : 1,
+            transition: 'opacity 0.2s'
         }}
     >
         <div className={styles.codeAndMenu}>

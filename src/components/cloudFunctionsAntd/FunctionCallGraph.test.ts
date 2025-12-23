@@ -1,5 +1,5 @@
-import { FunctionCallGraph } from './FunctionCallGraph';
-import { FunctionData } from './FunctionData';
+import {FunctionCallGraph} from './FunctionCallGraph';
+import {FunctionData} from './FunctionData';
 
 describe('FunctionCallGraph', () => {
     let graph: FunctionCallGraph;
@@ -9,9 +9,9 @@ describe('FunctionCallGraph', () => {
 
     beforeEach(() => {
         graph = new FunctionCallGraph();
-        func1 = new FunctionData('1', 'foo', 'Int', [], 'fun foo(): Int { return 1 }');
-        func2 = new FunctionData('2', 'bar', 'String', [['x', 'Int']], 'fun bar(x: Int): String { return x.toString() }');
-        func3 = new FunctionData('3', 'baz', 'Unit', [], 'fun baz() {}');
+        func1 = new FunctionData('1', 'foo', [], 'Int', 'fun foo(): Int { return 1 }');
+        func2 = new FunctionData('2', 'bar', [['x', 'Int']], 'String', 'fun bar(x: Int): String { return x.toString() }');
+        func3 = new FunctionData('3', 'baz', [], 'Unit', 'fun baz() {}');
     });
 
     describe('addFunction', () => {

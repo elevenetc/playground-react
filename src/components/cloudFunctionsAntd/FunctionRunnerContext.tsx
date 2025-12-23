@@ -1,15 +1,25 @@
 import {createContext, useContext} from 'react';
 import {FunctionData} from './FunctionData';
+import {ConnectionController} from './ConnectionController';
 
-type FunctionRunnerContextType = {
+export type GraphState = 'idle' | 'running' | 'connecting';
+
+type ConnectingInfo = {
+    sourceFunctionId: string;
+    sourceHandleId: string;
+} | null;
+
+type FunctionCallGraphContextType = {
     runFunction: (functionId: string) => void;
     selectFunction: (functionData: FunctionData) => void;
     selectedFunctionId: string | null;
-    isRunning: boolean;
+    state: GraphState;
+    connectionController: ConnectionController;
+    connectingInfo: ConnectingInfo;
 };
 
-export const FunctionRunnerContext = createContext<FunctionRunnerContextType | null>(null);
+export const FunctionCallGraphContext = createContext<FunctionCallGraphContextType | null>(null);
 
-export const useFunctionRunner = () => {
-    return useContext(FunctionRunnerContext);
+export const useFunctionCallGraph = () => {
+    return useContext(FunctionCallGraphContext);
 };
