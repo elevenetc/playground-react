@@ -4,7 +4,8 @@ import {assignInlineVars} from '@vanilla-extract/dynamic';
 import * as styles from './FunctionContainer.css';
 import {cssDebugValues, cssValues, DEBUG_CSS} from './FunctionContainer.css';
 import Button from '../button/Button';
-import { FunctionData } from '../cloudFunctionsAntd/FunctionData';
+import {FunctionData} from '../cloudFunctionsAntd/FunctionData';
+import {useFunctionRunner} from '../cloudFunctionsAntd/FunctionRunnerContext';
 
 const MAX_WIDTH = 300;
 const MAX_HEIGHT = 250;
@@ -14,12 +15,21 @@ const getDebugColor = (key: keyof typeof cssValues) =>
 
 type FunctionContainerProps = {
     functionData?: FunctionData;
+    functionId?: string;
     onClick?: () => void;
 };
 
-export default function FunctionContainer({ functionData, onClick }: FunctionContainerProps) {
+export default function FunctionContainer({functionData, functionId, onClick}: FunctionContainerProps) {
+    const runner = useFunctionRunner();
+
     const handleClick = () => {
         onClick?.();
+    };
+
+    const handleRunClick = () => {
+        if (functionId && runner) {
+            runner.runFunction(functionId);
+        }
     };
 
     const defaultData = new FunctionData(
@@ -51,8 +61,13 @@ export default function FunctionContainer({ functionData, onClick }: FunctionCon
             <div id="menu" className={styles.menu}>Menu</div>
         </div>
         <div id="statusAndRun" className={styles.statusAndRun}>
-            <div className={styles.status}>Ready</div>
-            <Button disabled={false}>Run</Button>
+            <div className={styles.status}>
+                {data.state === 'idle' && 'Ready'}
+                {data.state === 'running' && 'Running...'}
+                {data.state === 'building' && 'Building...'}
+                {data.state === 'build-error' && 'Build Error'}
+            </div>
+            <Button disabled={data.state !== 'idle'} onClick={handleRunClick}>Run</Button>
         </div>
     </div>;
 }
