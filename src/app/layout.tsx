@@ -2,6 +2,7 @@ import type {Metadata} from "next";
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
 import CloudFunctions from "@/components/cloudFunctions/CloudFunctions";
+import CloudFunctionsAntd from "@/components/cloudFunctionsAntd/CloudFunctionsAntd";
 
 const geistSans = Geist({
     variable: "--font-geist-sans",
@@ -25,7 +26,9 @@ export default function RootLayout() {
         {/*<FileViewerApp />*/}
         {/* <AnimatedButtonApp />*/}
         {/*<FunctionContainer />*/}
-        {CloudFunctions()}
+        {/*{CloudFunctions()}*/}
+        {/*<CloudFunctionsShadcnUi />*/}
+        <CloudFunctionsAntd />
         </body>
         </html>
     );
