@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Modal } from 'antd';
+import Editor from 'react-simple-code-editor';
+import { highlightKotlin } from './kotlinHighlighter';
 
 type CreateFunctionModalProps = {
     open: boolean;
@@ -13,6 +15,7 @@ export default function CreateFunctionModal({ open, onClose, onCreate }: CreateF
     const [width, setWidth] = useState(600);
     const [height, setHeight] = useState(350);
     const [isResizing, setIsResizing] = useState(false);
+    const [functionDetails, setFunctionDetails] = useState('fun foo() {\n  println("bar")\n}');
     const modalRef = useRef<HTMLDivElement>(null);
     const wasResizingRef = useRef(false);
     const resizeStartRef = useRef<{ mouseX: number; mouseY: number; width: number; height: number } | null>(null);
@@ -99,21 +102,27 @@ export default function CreateFunctionModal({ open, onClose, onCreate }: CreateF
                             zIndex: 9999,
                             pointerEvents: 'auto',
                         }}
-                        onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(100, 100, 100, 0.5)';
-                        }}
-                        onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = 'rgba(100, 100, 100, 0.3)';
-                        }}
                     >
                         ⋱
                     </div>
                 </div>
             )}
         >
-            <div style={{ padding: '20px 0', minHeight: height - 150 }}>
-                Enter function details here...
-            </div>
+            <Editor
+                value={functionDetails}
+                onValueChange={setFunctionDetails}
+                highlight={highlightKotlin}
+                padding={10}
+                style={{
+                    fontFamily: 'monospace',
+                    fontSize: 14,
+                    minHeight: height - 150,
+                    backgroundColor: '#282c34',
+                    color: '#abb2bf',
+                    overflow: 'auto',
+                    borderRadius: 8,
+                }}
+            />
         </Modal>
     );
 }
