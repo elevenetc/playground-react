@@ -4,6 +4,7 @@ import {assignInlineVars} from '@vanilla-extract/dynamic';
 import * as styles from './FunctionContainer.css';
 import {cssDebugValues, cssValues, DEBUG_CSS} from './FunctionContainer.css';
 import Button from '../button/Button';
+import { FunctionData } from '../cloudFunctionsAntd/FunctionData';
 
 const MAX_WIDTH = 300;
 const MAX_HEIGHT = 250;
@@ -11,10 +12,24 @@ const MAX_HEIGHT = 250;
 const getDebugColor = (key: keyof typeof cssValues) =>
     DEBUG_CSS ? cssDebugValues[key] : cssValues[key];
 
-export default function FunctionContainer() {
+type FunctionContainerProps = {
+    functionData?: FunctionData;
+    onClick?: () => void;
+};
+
+export default function FunctionContainer({ functionData, onClick }: FunctionContainerProps) {
     const handleClick = () => {
-        console.log('FunctionContainer clicked!');
+        onClick?.();
     };
+
+    const defaultData = new FunctionData(
+        'calculateSum',
+        'Int',
+        [['a', 'Int'], ['b', 'Int']],
+        'fun calculateSum(a: Int, b: Int): Int { return a + b }'
+    );
+
+    const data = functionData || defaultData;
 
     return <div
         id="functionContainer"
@@ -29,19 +44,16 @@ export default function FunctionContainer() {
         }}
     >
         <div className={styles.codeAndMenu}>
-            <div id="code" className={styles.code}>{getSum()}</div>
+            <div id="code" className={styles.code}>
+                {getKotlinCode(data.name, data.getArgumentsAsRecord(), data.returnType)}
+            </div>
             <div id="menu" className={styles.menu}>Menu</div>
         </div>
         <div id="statusAndRun" className={styles.statusAndRun}>
             <div className={styles.status}>Ready</div>
-            {/*<div className={styles.status}>Running...</div>*/}
             <Button disabled={false}>Run</Button>
         </div>
     </div>;
-}
-
-function getSum() {
-    return <div>{getKotlinCode('calculateSum', {a: 'Int', b: 'Int'}, 'Int')}</div>
 }
 
 function getKotlinCode(
