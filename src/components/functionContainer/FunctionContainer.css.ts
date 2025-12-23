@@ -1,16 +1,18 @@
-import { style, createVar } from '@vanilla-extract/css';
+import {createVar, style} from '@vanilla-extract/css';
 
 export const DEBUG_CSS = true;
+
+const bgColor = '#3a3a3a'
 
 export const cssValues = {
   functionContainerBg: 'transparent'
 };
 
 export const cssDebugValues = {
-  functionContainerBg: '#ff0000'
+  functionContainerBg: bgColor
 };
 
-const bgColor = '#3a3a3a'
+
 
 export const functionContainerBg = createVar();
 
@@ -31,27 +33,11 @@ export const functionContainer = style({
   },
 });
 
-export const codeAndMenu = style({
-  display: 'flex',
-  justifyContent: 'space-between',
-  backgroundColor: bgColor,
-  overflow: 'auto',
-  minHeight: 0,
-  flex: 1,
-  padding: '0.0rem',
-});
-
-export const code = style({
+export const codeSignature = style({
   overflow: 'auto',
   minWidth: 0,
   flex: 1,
-  padding: '0.75rem 0rem 0rem 0.75rem',
-});
-
-export const menu = style({
-  flexShrink: 0,
-  backgroundColor: bgColor,
-  visibility: 'hidden',
+  padding: '0.5rem 0.5rem 0.0rem 0.5rem',
 });
 
 export const statusAndRun = style({

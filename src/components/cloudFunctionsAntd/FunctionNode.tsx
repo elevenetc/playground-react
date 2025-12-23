@@ -4,6 +4,7 @@ import {memo} from 'react';
 import {Handle, NodeProps, Position} from 'reactflow';
 import FunctionContainer from '../functionContainer/FunctionContainer';
 import {FunctionData} from './FunctionData';
+import {PARAMETER_LINE_HEIGHT, SIGNATURE_FIRST_LINE_HEIGHT} from '../functionContainer/FunctionSignatureComponent';
 
 export type FunctionNodeData = {
     functionData: FunctionData;
@@ -13,10 +14,11 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
     const argumentCount = data.functionData.arguments.size;
     const hasReturnValue = data.functionData.returnType !== 'Unit';
 
-    // Calculate vertical positions for argument handles
-    const getArgumentHandlePosition = (index: number, total: number) => {
-        if (total === 1) return '50%';
-        return `${(100 / (total + 1)) * (index + 1)}%`;
+    // Calculate vertical positions for argument handles aligned with parameter rows
+    const getArgumentHandlePosition = (index: number) => {
+        // Position handle at center of parameter line
+        // First line is "fun functionName(", then parameters start
+        return SIGNATURE_FIRST_LINE_HEIGHT + (PARAMETER_LINE_HEIGHT * index) + (PARAMETER_LINE_HEIGHT / 2);
     };
 
     return (
@@ -30,7 +32,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
                             type="target"
                             position={Position.Left}
                             id={`input-${index}`}
-                            style={{top: getArgumentHandlePosition(index, argumentCount)}}
+                            style={{top: `${getArgumentHandlePosition(index)}px`}}
                         />
                     ))}
                 </>

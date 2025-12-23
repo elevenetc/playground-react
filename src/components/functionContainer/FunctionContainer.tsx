@@ -6,6 +6,7 @@ import {cssDebugValues, cssValues, DEBUG_CSS} from './FunctionContainer.css';
 import Button from '../button/Button';
 import {FunctionData} from '../cloudFunctionsAntd/FunctionData';
 import {useFunctionCallGraph} from '../cloudFunctionsAntd/FunctionRunnerContext';
+import FunctionSignatureComponent from './FunctionSignatureComponent';
 
 const MAX_WIDTH = 300;
 const MAX_HEIGHT = 250;
@@ -93,11 +94,12 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
             transition: 'opacity 0.2s'
         }}
     >
-        <div className={styles.codeAndMenu}>
-            <div id="code" className={styles.code}>
-                {getKotlinCode(data.name, data.getArgumentsAsRecord(), data.returnType)}
-            </div>
-            <div id="menu" className={styles.menu}>Menu</div>
+        <div id="codeSignature" className={styles.codeSignature}>
+            <FunctionSignatureComponent
+                functionName={data.name}
+                parameters={data.getArgumentsAsRecord()}
+                returnType={data.returnType}
+            />
         </div>
         <div id="statusAndRun" className={styles.statusAndRun}>
             <div className={styles.status}>
@@ -110,39 +112,3 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
         </div>
     </div>;
 }
-
-function getKotlinCode(
-    functionName: string,
-    parameters: Record<string, string>,
-    returnValue?: string
-) {
-    const paramEntries = Object.entries(parameters);
-
-    return (
-        <pre className={styles.kotlinCode}>
-            <span style={{color: '#569cd6'}}>fun</span> {functionName}(
-            {paramEntries.length > 0 && (
-                <>
-                    {'\n'}
-                    {paramEntries.map(([name, type], index) => (
-                        <span key={name}>
-                            {'   '}
-                            <span style={{color: '#ce9178'}}>{name}</span>
-                            {': '}
-                            <span style={{color: '#4ec9b0'}}>{type}</span>
-                            {index < paramEntries.length - 1 && ','}
-                            {'\n'}
-                        </span>
-                    ))}
-                </>
-            )}
-            ){returnValue ? (
-            <>
-                {': '}
-                <span style={{color: '#4ec9b0'}}>{returnValue}</span>
-            </>
-        ) : null}
-        </pre>
-    );
-}
-
