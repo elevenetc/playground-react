@@ -7,8 +7,8 @@ const processInputData = new FunctionData(
     '1',
     'processInput',
     'String',
-    [['input', 'String']],
-    'fun processInput(input: String): String { return input.trim() }'
+    [['input', 'String'], ['count', 'Int']],
+    'fun processInput(input: String, count: Int): String { return input.trim() }'
 );
 
 const validateDataData = new FunctionData(

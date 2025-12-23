@@ -18,23 +18,27 @@ const nodeTypes = {
 export default function CloudFunctionsAntd() {
     const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>(demoNodes);
     const [runner] = useState(() => new FakeFunctionRunner(demoGraph));
+    const [selectedFunction, setSelectedFunction] = useState<FunctionData | null>(null);
+    const [isRunning, setIsRunning] = useState(false);
 
     useEffect(() => {
         runner.subscribeOnFunctionStateChange((event) => {
-            setNodes((prevNodes) =>
-                prevNodes.map((node) => {
-                    if (node.id === event.functionId) {
-                        const func = demoGraph.getFunction(event.functionId);
-                        if (func) {
-                            // Create new FunctionData instance with updated state
-                            const updatedFunc = new FunctionData(
-                                func.id,
-                                func.name,
-                                func.returnType,
-                                func.arguments,
-                                func.sourceCode,
-                                event.newState
-                            );
+            const func = demoGraph.getFunction(event.functionId);
+            if (func) {
+                // Create new FunctionData instance with updated state
+                const updatedFunc = new FunctionData(
+                    func.id,
+                    func.name,
+                    func.returnType,
+                    func.arguments,
+                    func.sourceCode,
+                    event.newState
+                );
+
+                // Update nodes
+                setNodes((prevNodes) => {
+                    const newNodes = prevNodes.map((node) => {
+                        if (node.id === event.functionId) {
                             return {
                                 ...node,
                                 data: {
@@ -43,10 +47,26 @@ export default function CloudFunctionsAntd() {
                                 },
                             };
                         }
+                        return node;
+                    });
+
+                    // Check if any function is running
+                    const hasRunningFunction = newNodes.some(
+                        node => node.data.functionData.state === 'running'
+                    );
+                    setIsRunning(hasRunningFunction);
+
+                    return newNodes;
+                });
+
+                // Update selected function if it's the one that changed
+                setSelectedFunction((prev) => {
+                    if (prev && prev.id === event.functionId) {
+                        return updatedFunc;
                     }
-                    return node;
-                })
-            );
+                    return prev;
+                });
+            }
         });
     }, [runner]);
 
@@ -54,8 +74,21 @@ export default function CloudFunctionsAntd() {
         runner.run(functionId);
     };
 
+    const handleSelectFunction = (functionData: FunctionData) => {
+        setSelectedFunction(functionData);
+    };
+
+    const handlePaneClick = () => {
+        setSelectedFunction(null);
+    };
+
     return (
-        <FunctionRunnerContext.Provider value={{runFunction: handleRunFunction}}>
+        <FunctionRunnerContext.Provider value={{
+            runFunction: handleRunFunction,
+            selectFunction: handleSelectFunction,
+            selectedFunctionId: selectedFunction?.id ?? null,
+            isRunning
+        }}>
             <div className="fixed inset-0">
                 {/* ReactFlow Background */}
                 <div className="absolute inset-0 bg-gray-900">
@@ -63,6 +96,7 @@ export default function CloudFunctionsAntd() {
                         nodes={nodes}
                         edges={demoEdges}
                         nodeTypes={nodeTypes}
+                        onPaneClick={handlePaneClick}
                         fitView
                         fitViewOptions={{padding: 0.2}}
                     />
@@ -75,7 +109,7 @@ export default function CloudFunctionsAntd() {
 
                 {/* Right Panel */}
                 <div className="absolute top-2 right-2 bottom-2 w-[250px]">
-                    <RightPanel/>
+                    <RightPanel selectedFunction={selectedFunction}/>
                 </div>
             </div>
         </FunctionRunnerContext.Provider>

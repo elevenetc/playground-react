@@ -22,11 +22,16 @@ type FunctionContainerProps = {
 export default function FunctionContainer({functionData, functionId, onClick}: FunctionContainerProps) {
     const runner = useFunctionRunner();
 
-    const handleClick = () => {
+    const handleClick = (e: React.MouseEvent) => {
+        e.stopPropagation();
+        if (runner && functionData) {
+            runner.selectFunction(functionData);
+        }
         onClick?.();
     };
 
-    const handleRunClick = () => {
+    const handleRunClick = (e?: React.MouseEvent) => {
+        e?.stopPropagation();
         if (functionId && runner) {
             runner.runFunction(functionId);
         }
@@ -41,6 +46,24 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
     );
 
     const data = functionData || defaultData;
+    const isSelected = runner?.selectedFunctionId === functionId;
+    const isRunning = runner?.isRunning ?? false;
+
+    const getBorderStyle = () => {
+        if (isSelected) {
+            return {
+                border: '1px solid #FF0000',
+            };
+        }
+        if (isRunning) {
+            return {
+                border: '1px solid #00FF00',
+            };
+        }
+        return {
+            border: 'none'
+        };
+    };
 
     return <div
         id="functionContainer"
@@ -51,7 +74,8 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
                 [styles.functionContainerBg]: getDebugColor('functionContainerBg')
             }),
             maxWidth: MAX_WIDTH,
-            maxHeight: MAX_HEIGHT
+            maxHeight: MAX_HEIGHT,
+            ...getBorderStyle()
         }}
     >
         <div className={styles.codeAndMenu}>
@@ -67,7 +91,7 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
                 {data.state === 'building' && 'Building...'}
                 {data.state === 'build-error' && 'Build Error'}
             </div>
-            <Button disabled={data.state !== 'idle'} onClick={handleRunClick}>Run</Button>
+            <Button disabled={data.state !== 'idle' || isRunning} onClick={handleRunClick}>Run</Button>
         </div>
     </div>;
 }
