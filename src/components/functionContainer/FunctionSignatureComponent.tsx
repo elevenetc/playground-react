@@ -71,6 +71,7 @@ export default function FunctionSignatureComponent({
     };
 
     const isConnecting = graphContext?.state === 'connecting';
+    const isSourceNode = functionId === graphContext?.connectingInfo?.sourceFunctionId;
 
     return (
         <pre className={styles.kotlinCode}>
@@ -80,8 +81,8 @@ export default function FunctionSignatureComponent({
                     {'\n'}
                     {paramEntries.map(([name, type], index) => {
                         const canConnect = canParameterConnect(index, type);
-                        const shouldHighlight = isConnecting && canConnect;
-                        const shouldDim = isConnecting && !canConnect;
+                        const shouldHighlight = isConnecting && !isSourceNode && canConnect;
+                        const shouldDim = isConnecting && !isSourceNode && !canConnect;
 
                         return (
                             <span key={name}>
@@ -116,8 +117,8 @@ export default function FunctionSignatureComponent({
                 {': '}
                 <span style={{
                     color: '#4ec9b0',
-                    backgroundColor: isConnecting && canReturnTypeConnect() ? 'rgba(0, 255, 0, 0.2)' : 'transparent',
-                    opacity: isConnecting && !canReturnTypeConnect() ? 0.3 : 1,
+                    backgroundColor: isConnecting && !isSourceNode && canReturnTypeConnect() ? 'rgba(0, 255, 0, 0.2)' : 'transparent',
+                    opacity: isConnecting && !isSourceNode && !canReturnTypeConnect() ? 0.3 : 1,
                     transition: 'background-color 0.2s, opacity 0.2s',
                     borderRadius: '4px',
                     padding: '0px 4px'

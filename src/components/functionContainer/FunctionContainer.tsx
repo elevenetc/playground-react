@@ -78,7 +78,8 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
         }
     };
 
-    const shouldDim = graphContext?.state === 'connecting' && !canBeConnected();
+    const isSourceNode = functionId === graphContext?.connectingInfo?.sourceFunctionId;
+    const shouldDim = graphContext?.state === 'connecting' && !isSourceNode && !canBeConnected();
 
     const getBorderStyle = () => {
         if (isSelected) {

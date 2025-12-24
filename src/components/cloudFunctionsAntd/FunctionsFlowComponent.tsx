@@ -5,7 +5,7 @@ import {addEdge, Connection, Edge, EdgeChange, Node, NodeChange, OnConnectStartP
 import 'reactflow/dist/style.css';
 import FunctionNode, {FunctionNodeData} from './FunctionNode';
 import {CallController} from './CallController';
-import {GraphState, HandleType} from './FunctionRunnerContext';
+import {GraphState, HandleType, useFunctionCallGraph} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles, defaultEdgeOptions, edgeStyle} from './connectionStyles';
 
@@ -40,6 +40,7 @@ export default function FunctionsFlowComponent({
                                                    setConnectingInfo,
                                                    onPaneClick
                                                }: FunctionsFlowComponentProps) {
+    const graphContext = useFunctionCallGraph();
 
     const onConnect = useCallback(
         (connection: Connection) => {
@@ -88,11 +89,15 @@ export default function FunctionsFlowComponent({
     );
 
     return (
-        <div style={{width: '100%', height: '100%'}}>
+        <div style={{width: '100%', height: '100%'}}
+             className={graphContext?.state === 'connecting' ? 'connecting-mode' : ''}>
             <style>{`
                 .react-flow__edge.selected .react-flow__edge-path {
                     stroke: ${ConnectionStyles.selected.color} !important;
                     stroke-width: ${edgeStyle.strokeWidth} !important;
+                }
+                .connecting-mode .react-flow__edge .react-flow__edge-path {
+                    opacity: 0.2;
                 }
             `}</style>
             <svg style={{position: 'absolute', width: 0, height: 0}}>

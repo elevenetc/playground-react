@@ -17,6 +17,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
     const graphContext = useFunctionCallGraph();
     const argumentCount = data.functionData.arguments.size;
     const hasReturnValue = data.functionData.returnType !== 'Unit';
+    const isSourceNode = data.functionData.id === graphContext?.connectingInfo?.sourceFunctionId;
 
     // Calculate vertical positions for argument handles aligned with parameter rows
     const getArgumentHandlePosition = (index: number) => {
@@ -79,7 +80,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
             borderColor: ConnectionStyles.input.color
         };
 
-        if (graphContext?.state === 'connecting' && !canInputHandleConnect(argumentIndex)) {
+        if (graphContext?.state === 'connecting' && !isSourceNode && !canInputHandleConnect(argumentIndex)) {
             return {
                 ...baseStyle,
                 opacity: 0.2,
@@ -108,7 +109,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
             borderColor: ConnectionStyles.output.color
         };
 
-        if (graphContext?.state === 'connecting' && !canOutputHandleConnect()) {
+        if (graphContext?.state === 'connecting' && !isSourceNode && !canOutputHandleConnect()) {
             return {
                 ...baseStyle,
                 opacity: 0.2,
