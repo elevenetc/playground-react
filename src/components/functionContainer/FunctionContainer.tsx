@@ -7,6 +7,7 @@ import Button from '../button/Button';
 import {FunctionData} from '../cloudFunctionsAntd/FunctionData';
 import {useFunctionCallGraph} from '../cloudFunctionsAntd/FunctionRunnerContext';
 import FunctionSignatureComponent from './FunctionSignatureComponent';
+import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
 
 const MAX_WIDTH = 300;
 const MAX_HEIGHT = 250;
@@ -49,16 +50,32 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
             return true;
         }
 
-        const {sourceFunctionId} = graphContext.connectingInfo;
-        const argumentCount = data.arguments.size;
+        const {sourceFunctionId, sourceHandleId, handleType} = graphContext.connectingInfo;
 
-        for (let i = 0; i < argumentCount; i++) {
-            if (graphContext.connectionController.canBeConnected(sourceFunctionId, functionId, i)) {
-                return true;
+        if (handleType === 'source') {
+            // Dragging from output -> check if any input can accept it
+            const argumentCount = data.arguments.size;
+            for (let i = 0; i < argumentCount; i++) {
+                if (graphContext.connectionController.canBeConnected(sourceFunctionId, functionId, i)) {
+                    return true;
+                }
             }
-        }
+            return false;
+        } else {
+            // Dragging from input -> check if this function's output can connect to it
+            if (data.returnType === 'Unit') {
+                return false; // No output to connect
+            }
 
-        return false;
+            const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);
+            if (argumentIndex === null) return false;
+
+            return graphContext.connectionController.canBeConnected(
+                functionId,
+                sourceFunctionId,
+                argumentIndex
+            );
+        }
     };
 
     const shouldDim = graphContext?.state === 'connecting' && !canBeConnected();

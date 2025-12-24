@@ -1,7 +1,7 @@
 import * as styles from './FunctionContainer.css';
 
 export const PARAMETER_LINE_HEIGHT = 20; // Matches kotlinCode lineHeight: 1.25rem (20px)
-export const SIGNATURE_FIRST_LINE_HEIGHT = 45;
+export const SIGNATURE_FIRST_LINE_HEIGHT = 43;
 
 type FunctionSignatureProps = {
     functionName: string;

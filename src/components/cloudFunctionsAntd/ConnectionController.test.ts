@@ -1,14 +1,14 @@
-import {ConnectionController} from './ConnectionController';
+import {CallController} from './CallController';
 import {FunctionCallGraph} from './FunctionCallGraph';
 import {FunctionData} from './FunctionData';
 
 describe('ConnectionController', () => {
     let graph: FunctionCallGraph;
-    let controller: ConnectionController;
+    let controller: CallController;
 
     beforeEach(() => {
         graph = new FunctionCallGraph();
-        controller = new ConnectionController(graph);
+        controller = new CallController(graph);
     });
 
     test('should allow connection when types match', () => {

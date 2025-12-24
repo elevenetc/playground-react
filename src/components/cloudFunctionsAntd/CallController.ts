@@ -1,6 +1,6 @@
 import {FunctionCallGraph} from './FunctionCallGraph';
 
-export class ConnectionController {
+export class CallController {
     private graph: FunctionCallGraph;
 
     constructor(graph: FunctionCallGraph) {

@@ -4,8 +4,9 @@ import {useCallback} from 'react';
 import {addEdge, Connection, Edge, EdgeChange, Node, NodeChange, OnConnectStartParams, ReactFlow} from 'reactflow';
 import 'reactflow/dist/style.css';
 import FunctionNode, {FunctionNodeData} from './FunctionNode';
-import {ConnectionController} from './ConnectionController';
-import {GraphState} from './FunctionRunnerContext';
+import {CallController} from './CallController';
+import {GraphState, HandleType} from './FunctionRunnerContext';
+import {CallConnectionUtils} from './callConnectionUtils';
 
 const nodeTypes = {
     functionNode: FunctionNode,
@@ -17,9 +18,13 @@ type FunctionsFlowComponentProps = {
     setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
-    connectionController: ConnectionController;
+    connectionController: CallController;
     setState: (state: GraphState) => void;
-    setConnectingInfo: (info: { sourceFunctionId: string; sourceHandleId: string } | null) => void;
+    setConnectingInfo: (info: {
+        sourceFunctionId: string;
+        sourceHandleId: string;
+        handleType: HandleType
+    } | null) => void;
     onPaneClick: () => void;
 };
 
@@ -41,12 +46,11 @@ export default function FunctionsFlowComponent({
                 return;
             }
 
-            const targetHandleMatch = connection.targetHandle.match(/^input-(\d+)$/);
-            if (!targetHandleMatch) {
+            const argumentIndex = CallConnectionUtils.parseInputIndex(connection.targetHandle);
+            if (argumentIndex === null) {
                 return;
             }
 
-            const argumentIndex = parseInt(targetHandleMatch[1], 10);
             const canConnect = connectionController.canBeConnected(
                 connection.source,
                 connection.target,
@@ -62,11 +66,12 @@ export default function FunctionsFlowComponent({
 
     const onConnectStart = useCallback(
         (_: React.MouseEvent | React.TouchEvent, params: OnConnectStartParams) => {
-            if (params.nodeId && params.handleId && params.handleType === 'source') {
+            if (params.nodeId && params.handleId && params.handleType) {
                 setState('connecting');
                 setConnectingInfo({
                     sourceFunctionId: params.nodeId,
-                    sourceHandleId: params.handleId
+                    sourceHandleId: params.handleId,
+                    handleType: params.handleType
                 });
             }
         },

@@ -7,9 +7,9 @@ import RightPanel from './RightPanel';
 import {FunctionNodeData} from './FunctionNode';
 import {demoEdges, demoGraph, demoNodes} from './demoNodes';
 import {FakeFunctionRunner} from './FakeFunctionRunner';
-import {FunctionCallGraphContext, GraphState} from './FunctionRunnerContext';
+import {FunctionCallGraphContext, GraphState, HandleType} from './FunctionRunnerContext';
 import {FunctionData} from './FunctionData';
-import {ConnectionController} from './ConnectionController';
+import {CallController} from './CallController';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
 
 export default function CloudFunctionsAntd() {
@@ -18,10 +18,11 @@ export default function CloudFunctionsAntd() {
     const [runner] = useState(() => new FakeFunctionRunner(demoGraph));
     const [selectedFunction, setSelectedFunction] = useState<FunctionData | null>(null);
     const [state, setState] = useState<GraphState>('idle');
-    const [connectionController] = useState(() => new ConnectionController(demoGraph));
+    const [connectionController] = useState(() => new CallController(demoGraph));
     const [connectingInfo, setConnectingInfo] = useState<{
         sourceFunctionId: string;
-        sourceHandleId: string
+        sourceHandleId: string;
+        handleType: HandleType;
     } | null>(null);
 
     const onNodesChange = useCallback(

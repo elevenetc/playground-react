@@ -1,12 +1,14 @@
 import {createContext, useContext} from 'react';
 import {FunctionData} from './FunctionData';
-import {ConnectionController} from './ConnectionController';
+import {CallController} from './CallController';
 
 export type GraphState = 'idle' | 'running' | 'connecting';
+export type HandleType = 'source' | 'target';
 
 type ConnectingInfo = {
     sourceFunctionId: string;
     sourceHandleId: string;
+    handleType: HandleType;
 } | null;
 
 type FunctionCallGraphContextType = {
@@ -14,7 +16,7 @@ type FunctionCallGraphContextType = {
     selectFunction: (functionData: FunctionData) => void;
     selectedFunctionId: string | null;
     state: GraphState;
-    connectionController: ConnectionController;
+    connectionController: CallController;
     connectingInfo: ConnectingInfo;
 };
 
