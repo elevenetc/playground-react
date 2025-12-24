@@ -116,6 +116,7 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
                 functionName={data.name}
                 parameters={data.getArgumentsAsRecord()}
                 returnType={data.returnType}
+                functionId={functionId}
             />
         </div>
         <div id="statusAndRun" className={styles.statusAndRun}>
