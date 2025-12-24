@@ -7,6 +7,7 @@ import {FunctionData} from './FunctionData';
 import {PARAMETER_LINE_HEIGHT, SIGNATURE_FIRST_LINE_HEIGHT} from '../functionContainer/FunctionSignatureComponent';
 import {useFunctionCallGraph} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
+import {ConnectionStyles} from './connectionStyles';
 
 export type FunctionNodeData = {
     functionData: FunctionData;
@@ -71,7 +72,12 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
 
     // Get style for input handle based on connection compatibility
     const getInputHandleStyle = (argumentIndex: number) => {
-        const baseStyle = {top: `${getArgumentHandlePosition(argumentIndex)}px`};
+        const baseStyle = {
+            top: `${getArgumentHandlePosition(argumentIndex)}px`,
+            left: '13.5px',
+            background: ConnectionStyles.input.color,
+            borderColor: ConnectionStyles.input.color
+        };
 
         if (graphContext?.state === 'connecting' && !canInputHandleConnect(argumentIndex)) {
             return {
@@ -84,9 +90,23 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
         return baseStyle;
     };
 
+    // Calculate vertical position for output handle aligned with return type
+    const getOutputHandlePosition = () => {
+        if (argumentCount === 0) {
+            return SIGNATURE_FIRST_LINE_HEIGHT / 1.3;
+        } else {
+            return SIGNATURE_FIRST_LINE_HEIGHT + (PARAMETER_LINE_HEIGHT * argumentCount) + (PARAMETER_LINE_HEIGHT / 2);
+        }
+    };
+
     // Get style for output handle based on connection compatibility
     const getOutputHandleStyle = () => {
-        const baseStyle = {top: '50%'};
+        const baseStyle = {
+            top: `${getOutputHandlePosition()}px`,
+            right: '13px',
+            background: ConnectionStyles.output.color,
+            borderColor: ConnectionStyles.output.color
+        };
 
         if (graphContext?.state === 'connecting' && !canOutputHandleConnect()) {
             return {

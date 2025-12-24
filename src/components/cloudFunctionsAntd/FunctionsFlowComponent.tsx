@@ -7,6 +7,7 @@ import FunctionNode, {FunctionNodeData} from './FunctionNode';
 import {CallController} from './CallController';
 import {GraphState, HandleType} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
+import {ConnectionStyles, defaultEdgeOptions, edgeStyle} from './connectionStyles';
 
 const nodeTypes = {
     functionNode: FunctionNode,
@@ -87,22 +88,40 @@ export default function FunctionsFlowComponent({
     );
 
     return (
-        <ReactFlow
-            nodes={nodes}
-            edges={edges}
-            nodeTypes={nodeTypes}
-            onNodesChange={onNodesChange}
-            onEdgesChange={onEdgesChange}
-            onConnect={onConnect}
-            onConnectStart={onConnectStart}
-            onConnectEnd={onConnectEnd}
-            onPaneClick={onPaneClick}
-            fitView
-            fitViewOptions={{padding: 0.2}}
-            nodesDraggable={true}
-            edgesUpdatable={true}
-            edgesFocusable={true}
-            elementsSelectable={true}
-        />
+        <div style={{width: '100%', height: '100%'}}>
+            <style>{`
+                .react-flow__edge.selected .react-flow__edge-path {
+                    stroke: ${ConnectionStyles.selected.color} !important;
+                    stroke-width: ${edgeStyle.strokeWidth} !important;
+                }
+            `}</style>
+            <svg style={{position: 'absolute', width: 0, height: 0}}>
+                <defs>
+                    <linearGradient id="edge-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stopColor={ConnectionStyles.output.color}/>
+                        <stop offset="100%" stopColor={ConnectionStyles.input.color}/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <ReactFlow
+                nodes={nodes}
+                edges={edges}
+                nodeTypes={nodeTypes}
+                defaultEdgeOptions={defaultEdgeOptions}
+                connectionLineStyle={edgeStyle}
+                onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
+                onConnect={onConnect}
+                onConnectStart={onConnectStart}
+                onConnectEnd={onConnectEnd}
+                onPaneClick={onPaneClick}
+                fitView
+                fitViewOptions={{padding: 0.2}}
+                nodesDraggable={true}
+                edgesUpdatable={true}
+                edgesFocusable={true}
+                elementsSelectable={true}
+            />
+        </div>
     );
 }
