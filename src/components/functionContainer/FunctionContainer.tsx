@@ -7,6 +7,7 @@ import {FunctionData} from '../cloudFunctionsAntd/FunctionData';
 import {useFunctionCallGraph} from '../cloudFunctionsAntd/FunctionRunnerContext';
 import FunctionSignatureComponent from './FunctionSignatureComponent';
 import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
+import {Button} from "antd";
 
 const MAX_WIDTH = 300;
 const MAX_HEIGHT = 250;
@@ -120,13 +121,17 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
             />
         </div>
         <div id="statusAndRun" className={styles.statusAndRun}>
-            <div className={styles.status}>
-                {data.state === 'idle' && 'Ready'}
+            <Button
+                size="small"
+                type="text"
+                style={{flex: "auto", height: "2rem", borderRadius: '0 0 0.375rem 0.375rem'}}
+                disabled={data.state !== 'idle' || isRunning}
+                onClick={handleRunClick}>
+                {data.state === 'idle' && 'Run'}
                 {data.state === 'running' && 'Running...'}
                 {data.state === 'building' && 'Building...'}
                 {data.state === 'build-error' && 'Build Error'}
-            </div>
-            {/*<Button disabled={data.state !== 'idle' || isRunning} onClick={handleRunClick}>Run</Button>*/}
+            </Button>
         </div>
     </div>;
 }

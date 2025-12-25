@@ -2,6 +2,7 @@
 
 import {useCallback, useEffect, useState} from 'react';
 import {applyEdgeChanges, applyNodeChanges, Edge, EdgeChange, Node, NodeChange} from 'reactflow';
+import {ConfigProvider, theme} from 'antd';
 import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 import {FunctionNodeData} from './FunctionNode';
@@ -90,40 +91,46 @@ export default function CloudFunctionsAntd() {
     };
 
     return (
-        <FunctionCallGraphContext.Provider value={{
-            runFunction: handleRunFunction,
-            selectFunction: handleSelectFunction,
-            selectedFunctionId: selectedFunction?.id ?? null,
-            state,
-            connectionController,
-            connectingInfo
-        }}>
-            <div className="fixed inset-0">
-                {/* ReactFlow Background */}
-                <div className="absolute inset-0 bg-gray-900">
-                    <FunctionsFlowComponent
-                        nodes={nodes}
-                        edges={edges}
-                        setEdges={setEdges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        connectionController={connectionController}
-                        setState={setState}
-                        setConnectingInfo={setConnectingInfo}
-                        onPaneClick={handlePaneClick}
-                    />
-                </div>
+        <ConfigProvider
+            theme={{
+                algorithm: theme.darkAlgorithm,
+            }}
+        >
+            <FunctionCallGraphContext.Provider value={{
+                runFunction: handleRunFunction,
+                selectFunction: handleSelectFunction,
+                selectedFunctionId: selectedFunction?.id ?? null,
+                state,
+                connectionController,
+                connectingInfo
+            }}>
+                <div className="fixed inset-0">
+                    {/* ReactFlow Background */}
+                    <div className="absolute inset-0 bg-gray-900">
+                        <FunctionsFlowComponent
+                            nodes={nodes}
+                            edges={edges}
+                            setEdges={setEdges}
+                            onNodesChange={onNodesChange}
+                            onEdgesChange={onEdgesChange}
+                            connectionController={connectionController}
+                            setState={setState}
+                            setConnectingInfo={setConnectingInfo}
+                            onPaneClick={handlePaneClick}
+                        />
+                    </div>
 
-                {/* Left Panel */}
-                <div className="absolute top-2 left-2 bottom-2 w-[250px]">
-                    <LeftPanel/>
-                </div>
+                    {/* Left Panel */}
+                    <div className="absolute top-2 left-2 bottom-2 w-[250px]">
+                        <LeftPanel/>
+                    </div>
 
-                {/* Right Panel */}
-                <div className="absolute top-2 right-2 bottom-2 w-[250px]">
-                    <RightPanel selectedFunction={selectedFunction}/>
+                    {/* Right Panel */}
+                    <div className="absolute top-2 right-2 bottom-2 w-[250px]">
+                        <RightPanel selectedFunction={selectedFunction}/>
+                    </div>
                 </div>
-            </div>
-        </FunctionCallGraphContext.Provider>
+            </FunctionCallGraphContext.Provider>
+        </ConfigProvider>
     );
 }

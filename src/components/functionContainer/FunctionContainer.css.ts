@@ -43,7 +43,6 @@ export const codeSignature = style({
 export const statusAndRun = style({
   display: 'flex',
   justifyContent: 'space-between',
-  backgroundColor: '#ff0000',
   padding: '0.0rem',
   marginTop: 0,
   maxHeight: 0,
@@ -52,20 +51,11 @@ export const statusAndRun = style({
   transition: 'max-height 0.3s ease, opacity 0.2s ease, margin-top 0.3s ease',
   selectors: {
     [`${functionContainer}:hover &`]: {
-      maxHeight: '20px',
+      maxHeight: '2rem',
       opacity: 1,
       marginTop: '0.0rem',
     },
   },
-});
-
-export const status = style({
-  padding: '0.1rem 0.1rem 0.1rem 0.1rem',
-  marginTop: "-0.2rem",
-  marginLeft: "0.2rem",
-  fontStyle: 'italic',
-  fontSize: '0.85rem',
-  color: '#ffffff',
 });
 
 export const kotlinCode = style({
