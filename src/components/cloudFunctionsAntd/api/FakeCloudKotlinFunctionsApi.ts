@@ -11,6 +11,7 @@ import {FakeFunctionRunner} from '../FakeFunctionRunner';
 import {Project} from '../Project';
 import {Function, FunctionState} from '../Function';
 import {FunctionConnection} from '../FunctionConnection';
+import {parseKotlinFunction} from './parseKotlinFunction';
 
 export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private localDb: LocalDb;
@@ -63,11 +64,12 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     }
 
     createFunction(sourceCode: string): void {
-        const func = this.parseSourceCode(sourceCode);
+        const functionDto = parseKotlinFunction(sourceCode);
+        const func = this.dtoToFunction(functionDto);
+
         this.project.addFunction(func);
         this.saveProject();
 
-        const functionDto = this.functionToDto(func);
         this.eventSubscribers.forEach(callback => {
             callback(crypto.randomUUID(), functionDto, null);
         });
@@ -148,32 +150,6 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private saveProject(): void {
         const projectDto = this.getProjects()[0];
         this.localDb.storeProject(projectDto);
-    }
-
-    private parseSourceCode(sourceCode: string): Function {
-        const functionId = crypto.randomUUID();
-
-        const nameMatch = sourceCode.match(/fun\s+(\w+)/);
-        const name = nameMatch ? nameMatch[1] : 'unnamed';
-
-        const argsMatch = sourceCode.match(/\(([^)]*)\)/);
-        const argsString = argsMatch ? argsMatch[1].trim() : '';
-        const args: [string, string][] = [];
-
-        if (argsString) {
-            const argParts = argsString.split(',');
-            argParts.forEach(part => {
-                const argMatch = part.trim().match(/(\w+)\s*:\s*(\S+)/);
-                if (argMatch) {
-                    args.push([argMatch[1], argMatch[2]]);
-                }
-            });
-        }
-
-        const returnTypeMatch = sourceCode.match(/\):\s*(\S+)/);
-        const returnType = returnTypeMatch ? returnTypeMatch[1] : 'Unit';
-
-        return new Function(functionId, name, args, returnType, sourceCode, 'idle');
     }
 
     private functionToDto(func: Function): FunctionDto {

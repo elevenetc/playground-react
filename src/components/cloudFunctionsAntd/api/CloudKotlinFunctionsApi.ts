@@ -26,6 +26,7 @@ export type FunctionDto = {
     arguments: FunctionArgumentDto[];
     sourceCode: string;
     state: string;
+    errorMessage?: string;
 };
 
 export type FunctionArgumentDto = {
