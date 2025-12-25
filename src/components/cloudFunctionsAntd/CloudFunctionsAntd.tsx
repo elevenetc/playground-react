@@ -6,20 +6,40 @@ import {ConfigProvider, theme} from 'antd';
 import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 import {FunctionNodeData} from './FunctionNode';
-import {demoEdges, demoGraph, demoNodes} from './demoNodes';
-import {FakeFunctionRunner} from './FakeFunctionRunner';
 import {GraphState, HandleType, ProjectContext} from './FunctionRunnerContext';
-import {Function} from './Function';
+import {Function, FunctionState} from './Function';
 import {CallController} from './CallController';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
+import {FakeCloudKotlinFunctionsApi} from './api/FakeCloudKotlinFunctionsApi';
+import {FunctionDto} from './api/CloudKotlinFunctionsApi';
+import {Project} from './Project';
+
+const dtoToFunction = (dto: FunctionDto): Function => {
+    const args: [string, string][] = dto.arguments.map(arg => [
+        arg.name,
+        arg.type.name + (arg.nullable ? '?' : '')
+    ]);
+
+    const returnType = dto.returnType.name + (dto.returnType.nullable ? '?' : '');
+
+    return new Function(
+        dto.id,
+        dto.name,
+        args,
+        returnType,
+        dto.sourceCode,
+        dto.state as FunctionState
+    );
+};
 
 export default function CloudFunctionsAntd() {
-    const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>(demoNodes);
-    const [edges, setEdges] = useState<Edge[]>(demoEdges);
-    const [runner] = useState(() => new FakeFunctionRunner(demoGraph));
+    const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>([]);
+    const [edges, setEdges] = useState<Edge[]>([]);
+    const [api] = useState(() => new FakeCloudKotlinFunctionsApi());
+    const [project] = useState(() => new Project());
     const [selectedFunction, setSelectedFunction] = useState<Function | null>(null);
     const [state, setState] = useState<GraphState>('idle');
-    const [connectionController] = useState(() => new CallController(demoGraph));
+    const [connectionController] = useState(() => new CallController(project));
     const [connectingInfo, setConnectingInfo] = useState<{
         sourceFunctionId: string;
         sourceHandleId: string;
@@ -37,49 +57,79 @@ export default function CloudFunctionsAntd() {
     );
 
     useEffect(() => {
-        runner.subscribeOnFunctionStateChange((event) => {
-            const func = demoGraph.getFunction(event.functionId);
-            if (func) {
-                // Create new Function instance with updated state
-                const updatedFunc = new Function(func.id, func.name, func.arguments, func.returnType, func.sourceCode, event.newState);
+        const projects = api.getProjects();
+        if (projects.length > 0) {
+            const projectDto = projects[0];
 
-                // Update nodes
-                setNodes((prevNodes) => {
-                    const newNodes = prevNodes.map((node) => {
-                        if (node.id === event.functionId) {
-                            return {
-                                ...node,
-                                data: {
-                                    ...node.data,
-                                    functionData: updatedFunc,
-                                },
-                            };
-                        }
-                        return node;
-                    });
+            projectDto.functions.forEach(funcDto => {
+                const func = dtoToFunction(funcDto);
+                project.addFunction(func);
+            });
 
-                    // Check if any function is running
-                    const hasRunningFunction = newNodes.some(
-                        node => node.data.functionData.state === 'running'
-                    );
-                    setState(hasRunningFunction ? 'running' : 'idle');
+            projectDto.connections.forEach(connDto => {
+                project.addConnection(connDto.outFunctionId, connDto.inputArgumentId);
+            });
 
-                    return newNodes;
-                });
+            const initialNodes: Node<FunctionNodeData>[] = projectDto.functions.map((funcDto, index) => ({
+                id: funcDto.id,
+                type: 'functionNode',
+                data: {functionData: dtoToFunction(funcDto)},
+                position: {x: 50 + index * 350, y: 250},
+            }));
 
-                // Update selected function if it's the one that changed
-                setSelectedFunction((prev) => {
-                    if (prev && prev.id === event.functionId) {
-                        return updatedFunc;
-                    }
-                    return prev;
-                });
+            const initialEdges: Edge[] = projectDto.connections.map((conn) => ({
+                id: `e-${conn.outFunctionId}-${conn.inputArgumentId}`,
+                source: conn.outFunctionId,
+                target: conn.inputArgumentId,
+                sourceHandle: 'output',
+                targetHandle: '0',
+            }));
+
+            setNodes(initialNodes);
+            setEdges(initialEdges);
+        }
+
+        api.subscribeToFunctionEvents((_eventId, functionDto, error) => {
+            if (error) {
+                console.error('Function error:', error);
+                return;
             }
+
+            const func = dtoToFunction(functionDto);
+
+            setNodes((prevNodes) => {
+                const newNodes = prevNodes.map((node) => {
+                    if (node.id === functionDto.id) {
+                        return {
+                            ...node,
+                            data: {
+                                ...node.data,
+                                functionData: func,
+                            },
+                        };
+                    }
+                    return node;
+                });
+
+                const hasRunningFunction = newNodes.some(
+                    node => node.data.functionData.state === 'running'
+                );
+                setState(hasRunningFunction ? 'running' : 'idle');
+
+                return newNodes;
+            });
+
+            setSelectedFunction((prev) => {
+                if (prev && prev.id === functionDto.id) {
+                    return func;
+                }
+                return prev;
+            });
         });
-    }, [runner]);
+    }, [api, project]);
 
     const handleRunFunction = (functionId: string) => {
-        runner.run(functionId);
+        api.runFunction(functionId);
     };
 
     const handleSelectFunction = (functionData: Function) => {
