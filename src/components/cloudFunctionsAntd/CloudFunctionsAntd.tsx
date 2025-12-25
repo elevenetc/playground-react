@@ -8,8 +8,8 @@ import RightPanel from './RightPanel';
 import {FunctionNodeData} from './FunctionNode';
 import {demoEdges, demoGraph, demoNodes} from './demoNodes';
 import {FakeFunctionRunner} from './FakeFunctionRunner';
-import {FunctionCallGraphContext, GraphState, HandleType} from './FunctionRunnerContext';
-import {FunctionData} from './FunctionData';
+import {GraphState, HandleType, ProjectContext} from './FunctionRunnerContext';
+import {Function} from './Function';
 import {CallController} from './CallController';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
 
@@ -17,7 +17,7 @@ export default function CloudFunctionsAntd() {
     const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>(demoNodes);
     const [edges, setEdges] = useState<Edge[]>(demoEdges);
     const [runner] = useState(() => new FakeFunctionRunner(demoGraph));
-    const [selectedFunction, setSelectedFunction] = useState<FunctionData | null>(null);
+    const [selectedFunction, setSelectedFunction] = useState<Function | null>(null);
     const [state, setState] = useState<GraphState>('idle');
     const [connectionController] = useState(() => new CallController(demoGraph));
     const [connectingInfo, setConnectingInfo] = useState<{
@@ -40,8 +40,8 @@ export default function CloudFunctionsAntd() {
         runner.subscribeOnFunctionStateChange((event) => {
             const func = demoGraph.getFunction(event.functionId);
             if (func) {
-                // Create new FunctionData instance with updated state
-                const updatedFunc = new FunctionData(func.id, func.name, func.arguments, func.returnType, func.sourceCode, event.newState);
+                // Create new Function instance with updated state
+                const updatedFunc = new Function(func.id, func.name, func.arguments, func.returnType, func.sourceCode, event.newState);
 
                 // Update nodes
                 setNodes((prevNodes) => {
@@ -82,7 +82,7 @@ export default function CloudFunctionsAntd() {
         runner.run(functionId);
     };
 
-    const handleSelectFunction = (functionData: FunctionData) => {
+    const handleSelectFunction = (functionData: Function) => {
         setSelectedFunction(functionData);
     };
 
@@ -96,7 +96,7 @@ export default function CloudFunctionsAntd() {
                 algorithm: theme.darkAlgorithm,
             }}
         >
-            <FunctionCallGraphContext.Provider value={{
+            <ProjectContext.Provider value={{
                 runFunction: handleRunFunction,
                 selectFunction: handleSelectFunction,
                 selectedFunctionId: selectedFunction?.id ?? null,
@@ -130,7 +130,7 @@ export default function CloudFunctionsAntd() {
                         <RightPanel selectedFunction={selectedFunction}/>
                     </div>
                 </div>
-            </FunctionCallGraphContext.Provider>
+            </ProjectContext.Provider>
         </ConfigProvider>
     );
 }

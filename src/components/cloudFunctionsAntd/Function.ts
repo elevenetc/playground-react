@@ -1,6 +1,6 @@
 export type FunctionState = 'building' | 'build-error' | 'idle' | 'running';
 
-export class FunctionData {
+export class Function {
     id: string;
     name: string;
     returnType: string;

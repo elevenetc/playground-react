@@ -1,19 +1,19 @@
 import {CallController} from '../CallController';
-import {FunctionCallGraph} from '../FunctionCallGraph';
-import {FunctionData} from '../FunctionData';
+import {Project} from '../Project';
+import {Function} from '../Function';
 
 describe('ConnectionController', () => {
-    let graph: FunctionCallGraph;
+    let graph: Project;
     let controller: CallController;
 
     beforeEach(() => {
-        graph = new FunctionCallGraph();
+        graph = new Project();
         controller = new CallController(graph);
     });
 
     test('should allow connection when types match', () => {
-        const func1 = new FunctionData('1', 'getNumber', [], 'Int', 'fun getNumber(): Int { return 42 }');
-        const func2 = new FunctionData('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
+        const func1 = new Function('1', 'getNumber', [], 'Int', 'fun getNumber(): Int { return 42 }');
+        const func2 = new Function('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
 
         graph.addFunction(func1);
         graph.addFunction(func2);
@@ -22,8 +22,8 @@ describe('ConnectionController', () => {
     });
 
     test('should reject connection when types do not match', () => {
-        const func1 = new FunctionData('1', 'getString', [], 'String', 'fun getString(): String { return "hello" }');
-        const func2 = new FunctionData('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
+        const func1 = new Function('1', 'getString', [], 'String', 'fun getString(): String { return "hello" }');
+        const func2 = new Function('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
 
         graph.addFunction(func1);
         graph.addFunction(func2);
@@ -32,7 +32,7 @@ describe('ConnectionController', () => {
     });
 
     test('should reject connection when output function does not exist', () => {
-        const func2 = new FunctionData('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
+        const func2 = new Function('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
 
         graph.addFunction(func2);
 
@@ -40,7 +40,7 @@ describe('ConnectionController', () => {
     });
 
     test('should reject connection when input function does not exist', () => {
-        const func1 = new FunctionData('1', 'getNumber', [], 'Int', 'fun getNumber(): Int { return 42 }');
+        const func1 = new Function('1', 'getNumber', [], 'Int', 'fun getNumber(): Int { return 42 }');
 
         graph.addFunction(func1);
 
@@ -48,8 +48,8 @@ describe('ConnectionController', () => {
     });
 
     test('should reject connection when output function returns Unit', () => {
-        const func1 = new FunctionData('1', 'doSomething', [], 'Unit', 'fun doSomething() { println("test") }');
-        const func2 = new FunctionData('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
+        const func1 = new Function('1', 'doSomething', [], 'Unit', 'fun doSomething() { println("test") }');
+        const func2 = new Function('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
 
         graph.addFunction(func1);
         graph.addFunction(func2);
@@ -58,8 +58,8 @@ describe('ConnectionController', () => {
     });
 
     test('should reject connection when argument index is negative', () => {
-        const func1 = new FunctionData('1', 'getNumber', [], 'Int', 'fun getNumber(): Int { return 42 }');
-        const func2 = new FunctionData('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
+        const func1 = new Function('1', 'getNumber', [], 'Int', 'fun getNumber(): Int { return 42 }');
+        const func2 = new Function('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
 
         graph.addFunction(func1);
         graph.addFunction(func2);
@@ -68,8 +68,8 @@ describe('ConnectionController', () => {
     });
 
     test('should reject connection when argument index is out of bounds', () => {
-        const func1 = new FunctionData('1', 'getNumber', [], 'Int', 'fun getNumber(): Int { return 42 }');
-        const func2 = new FunctionData('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
+        const func1 = new Function('1', 'getNumber', [], 'Int', 'fun getNumber(): Int { return 42 }');
+        const func2 = new Function('2', 'processNumber', [['num', 'Int']], 'String', 'fun processNumber(num: Int): String { return num.toString() }');
 
         graph.addFunction(func1);
         graph.addFunction(func2);
@@ -78,8 +78,8 @@ describe('ConnectionController', () => {
     });
 
     test('should allow connection to correct argument when function has multiple arguments', () => {
-        const func1 = new FunctionData('1', 'getString', [], 'String', 'fun getString(): String { return "hello" }');
-        const func2 = new FunctionData('2', 'process', [['num', 'Int'], ['text', 'String'], ['flag', 'Boolean']], 'String', 'fun process(num: Int, text: String, flag: Boolean): String { return text }');
+        const func1 = new Function('1', 'getString', [], 'String', 'fun getString(): String { return "hello" }');
+        const func2 = new Function('2', 'process', [['num', 'Int'], ['text', 'String'], ['flag', 'Boolean']], 'String', 'fun process(num: Int, text: String, flag: Boolean): String { return text }');
 
         graph.addFunction(func1);
         graph.addFunction(func2);
@@ -90,8 +90,8 @@ describe('ConnectionController', () => {
     });
 
     test('should handle complex types', () => {
-        const func1 = new FunctionData('1', 'getList', [], 'List<Int>', 'fun getList(): List<Int> { return listOf(1, 2, 3) }');
-        const func2 = new FunctionData('2', 'processData', [['data', 'List<Int>']], 'String', 'fun processData(data: List<Int>): String { return data.toString() }');
+        const func1 = new Function('1', 'getList', [], 'List<Int>', 'fun getList(): List<Int> { return listOf(1, 2, 3) }');
+        const func2 = new Function('2', 'processData', [['data', 'List<Int>']], 'String', 'fun processData(data: List<Int>): String { return data.toString() }');
 
         graph.addFunction(func1);
         graph.addFunction(func2);
@@ -100,8 +100,8 @@ describe('ConnectionController', () => {
     });
 
     test('should reject connection between complex types that do not match', () => {
-        const func1 = new FunctionData('1', 'getList', [], 'List<Int>', 'fun getList(): List<Int> { return listOf(1, 2, 3) }');
-        const func2 = new FunctionData('2', 'processData', [['data', 'List<String>']], 'String', 'fun processData(data: List<String>): String { return data.toString() }');
+        const func1 = new Function('1', 'getList', [], 'List<Int>', 'fun getList(): List<Int> { return listOf(1, 2, 3) }');
+        const func2 = new Function('2', 'processData', [['data', 'List<String>']], 'String', 'fun processData(data: List<String>): String { return data.toString() }');
 
         graph.addFunction(func1);
         graph.addFunction(func2);

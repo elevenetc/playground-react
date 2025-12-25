@@ -1,9 +1,9 @@
-import {FunctionCallGraph} from './FunctionCallGraph';
+import {Project} from './Project';
 
 export class CallController {
-    private graph: FunctionCallGraph;
+    private graph: Project;
 
-    constructor(graph: FunctionCallGraph) {
+    constructor(graph: Project) {
         this.graph = graph;
     }
 

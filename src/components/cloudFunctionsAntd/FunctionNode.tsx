@@ -3,18 +3,18 @@
 import {memo} from 'react';
 import {Handle, NodeProps, Position} from 'reactflow';
 import FunctionContainer from '../functionContainer/FunctionContainer';
-import {FunctionData} from './FunctionData';
+import {Function} from './Function';
 import {PARAMETER_LINE_HEIGHT, SIGNATURE_FIRST_LINE_HEIGHT} from '../functionContainer/FunctionSignatureComponent';
-import {useFunctionCallGraph} from './FunctionRunnerContext';
+import {useProject} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles} from './connectionStyles';
 
 export type FunctionNodeData = {
-    functionData: FunctionData;
+    functionData: Function;
 };
 
 function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
-    const graphContext = useFunctionCallGraph();
+    const graphContext = useProject();
     const argumentCount = data.functionData.arguments.size;
     const hasReturnValue = data.functionData.returnType !== 'Unit';
     const isSourceNode = data.functionData.id === graphContext?.connectingInfo?.sourceFunctionId;

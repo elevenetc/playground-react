@@ -1,5 +1,5 @@
 import {createContext, useContext} from 'react';
-import {FunctionData} from './FunctionData';
+import {Function} from './Function';
 import {CallController} from './CallController';
 
 export type GraphState = 'idle' | 'running' | 'connecting';
@@ -11,17 +11,17 @@ type ConnectingInfo = {
     handleType: HandleType;
 } | null;
 
-type FunctionCallGraphContextType = {
+type ProjectContextType = {
     runFunction: (functionId: string) => void;
-    selectFunction: (functionData: FunctionData) => void;
+    selectFunction: (functionData: Function) => void;
     selectedFunctionId: string | null;
     state: GraphState;
     connectionController: CallController;
     connectingInfo: ConnectingInfo;
 };
 
-export const FunctionCallGraphContext = createContext<FunctionCallGraphContextType | null>(null);
+export const ProjectContext = createContext<ProjectContextType | null>(null);
 
-export const useFunctionCallGraph = () => {
-    return useContext(FunctionCallGraphContext);
+export const useProject = () => {
+    return useContext(ProjectContext);
 };

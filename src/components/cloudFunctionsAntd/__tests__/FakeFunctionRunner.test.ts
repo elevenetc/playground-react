@@ -1,19 +1,19 @@
 import {FakeFunctionRunner, FunctionStateChangeEvent} from '../FakeFunctionRunner';
-import {FunctionCallGraph} from '../FunctionCallGraph';
-import {FunctionData} from '../FunctionData';
+import {Project} from '../Project';
+import {Function} from '../Function';
 
 describe('FakeFunctionRunner', () => {
-    let graph: FunctionCallGraph;
+    let graph: Project;
     let runner: FakeFunctionRunner;
-    let func1: FunctionData;
-    let func2: FunctionData;
-    let func3: FunctionData;
+    let func1: Function;
+    let func2: Function;
+    let func3: Function;
 
     beforeEach(() => {
-        graph = new FunctionCallGraph();
-        func1 = new FunctionData('1', 'foo', [], 'Int', 'fun foo(): Int { return 1 }', 'idle');
-        func2 = new FunctionData('2', 'bar', [['x', 'Int']], 'String', 'fun bar(x: Int): String { return x.toString() }', 'idle');
-        func3 = new FunctionData('3', 'baz', [], 'Unit', 'fun baz() {}', 'idle');
+        graph = new Project();
+        func1 = new Function('1', 'foo', [], 'Int', 'fun foo(): Int { return 1 }', 'idle');
+        func2 = new Function('2', 'bar', [['x', 'Int']], 'String', 'fun bar(x: Int): String { return x.toString() }', 'idle');
+        func3 = new Function('3', 'baz', [], 'Unit', 'fun baz() {}', 'idle');
 
         graph.addFunction(func1);
         graph.addFunction(func2);
@@ -48,7 +48,7 @@ describe('FakeFunctionRunner', () => {
     });
 
     it('two chained functions both execute in sequence', () => {
-        graph.addCall('1', '2');
+        graph.addConnection('1', '2');
 
         const events: FunctionStateChangeEvent[] = [];
         runner.subscribeOnFunctionStateChange((event) => {
@@ -75,7 +75,7 @@ describe('FakeFunctionRunner', () => {
     });
 
     it('disconnected function is not called when chained functions run', () => {
-        graph.addCall('1', '2');
+        graph.addConnection('1', '2');
         // func3 is disconnected
 
         const events: FunctionStateChangeEvent[] = [];

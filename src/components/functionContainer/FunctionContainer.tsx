@@ -3,8 +3,8 @@
 import {assignInlineVars} from '@vanilla-extract/dynamic';
 import * as styles from './FunctionContainer.css';
 import {cssDebugValues, cssValues, DEBUG_CSS} from './FunctionContainer.css';
-import {FunctionData} from '../cloudFunctionsAntd/FunctionData';
-import {useFunctionCallGraph} from '../cloudFunctionsAntd/FunctionRunnerContext';
+import {Function} from '../cloudFunctionsAntd/Function';
+import {useProject} from '../cloudFunctionsAntd/FunctionRunnerContext';
 import FunctionSignatureComponent from './FunctionSignatureComponent';
 import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
 import {Button} from "antd";
@@ -16,13 +16,13 @@ const getDebugColor = (key: keyof typeof cssValues) =>
     DEBUG_CSS ? cssDebugValues[key] : cssValues[key];
 
 type FunctionContainerProps = {
-    functionData?: FunctionData;
+    functionData?: Function;
     functionId?: string;
     onClick?: () => void;
 };
 
 export default function FunctionContainer({functionData, functionId, onClick}: FunctionContainerProps) {
-    const graphContext = useFunctionCallGraph();
+    const graphContext = useProject();
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -39,7 +39,7 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
         }
     };
 
-    const defaultData = new FunctionData('default', 'calculateSum', [['a', 'Int'], ['b', 'Int']], 'Int', 'fun calculateSum(a: Int, b: Int): Int { return a + b }');
+    const defaultData = new Function('default', 'calculateSum', [['a', 'Int'], ['b', 'Int']], 'Int', 'fun calculateSum(a: Int, b: Int): Int { return a + b }');
 
     const data = functionData || defaultData;
     const isSelected = graphContext?.selectedFunctionId === functionId;

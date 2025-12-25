@@ -3,10 +3,10 @@
 import {useState} from 'react';
 import {Button} from 'antd';
 import CreateFunctionModal from './CreateFunctionModal';
-import {FunctionData} from './FunctionData';
+import {Function} from './Function';
 
 type RightPanelProps = {
-    selectedFunction: FunctionData | null;
+    selectedFunction: Function | null;
 };
 
 export default function RightPanel({selectedFunction}: RightPanelProps) {

@@ -1,5 +1,5 @@
-import { FunctionCallGraph } from './FunctionCallGraph';
-import { FunctionState } from './FunctionData';
+import {Project} from './Project';
+import {FunctionState} from './Function';
 
 export type FunctionStateChangeEvent = {
     functionId: string;
@@ -7,10 +7,10 @@ export type FunctionStateChangeEvent = {
 };
 
 export class FakeFunctionRunner {
-    private graph: FunctionCallGraph;
+    private graph: Project;
     private subscribers: Array<(event: FunctionStateChangeEvent) => void>;
 
-    constructor(graph: FunctionCallGraph) {
+    constructor(graph: Project) {
         this.graph = graph;
         this.subscribers = [];
     }
@@ -38,11 +38,11 @@ export class FakeFunctionRunner {
             this.notifySubscribers({ functionId, newState: 'idle' });
 
             // Check for outgoing calls and run them
-            const outgoingCalls = this.graph.getOutgoingCalls(functionId);
+            const outgoingCalls = this.graph.getOutgoingConnections(functionId);
             outgoingCalls.forEach(call => {
-                const targetFunc = this.graph.getFunction(call.targetId);
+                const targetFunc = this.graph.getFunction(call.inputArgumentId);
                 if (targetFunc && targetFunc.state === 'idle') {
-                    this.run(call.targetId);
+                    this.run(call.inputArgumentId);
                 }
             });
         }, 1000);

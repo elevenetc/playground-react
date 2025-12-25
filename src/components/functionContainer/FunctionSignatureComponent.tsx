@@ -1,5 +1,5 @@
 import * as styles from './FunctionContainer.css';
-import {useFunctionCallGraph} from '../cloudFunctionsAntd/FunctionRunnerContext';
+import {useProject} from '../cloudFunctionsAntd/FunctionRunnerContext';
 import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
 
 export const PARAMETER_LINE_HEIGHT = 20; // Matches kotlinCode lineHeight: 1.25rem (20px)
@@ -18,7 +18,7 @@ export default function FunctionSignatureComponent({
                                                        returnType,
                                                        functionId
                                                    }: FunctionSignatureProps) {
-    const graphContext = useFunctionCallGraph();
+    const graphContext = useProject();
     const paramEntries = Object.entries(parameters);
 
     // Check if a parameter at given index can accept the current connection

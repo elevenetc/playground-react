@@ -1,13 +1,13 @@
 import {Edge, Node} from 'reactflow';
 import {FunctionNodeData} from './FunctionNode';
-import {FunctionData} from './FunctionData';
-import {FunctionCallGraph} from './FunctionCallGraph';
+import {Function} from './Function';
+import {Project} from './Project';
 
-const processInputData = new FunctionData('1', 'start', [], 'String', 'fun start(): String { return "foo" }');
+const processInputData = new Function('1', 'start', [], 'String', 'fun start(): String { return "foo" }');
 
-const validateDataData = new FunctionData('2', 'validateData', [['data', 'String'], ['dataStr', 'String'], ['dataInt', 'Int']], 'Boolean', 'fun validateData(data: String, dataStr: String, dataInt: Int): Boolean { return data.isNotEmpty() }');
+const validateDataData = new Function('2', 'validateData', [['data', 'String'], ['dataStr', 'String'], ['dataInt', 'Int']], 'Boolean', 'fun validateData(data: String, dataStr: String, dataInt: Int): Boolean { return data.isNotEmpty() }');
 
-const transformDataData = new FunctionData('3', 'transformData', [['validationResult', 'Boolean']], 'List<Int>', 'fun transformData(validationResult: Boolean): List<Int> { return listOf(1, 2, 3) }');
+const transformDataData = new Function('3', 'transformData', [['validationResult', 'Boolean']], 'List<Int>', 'fun transformData(validationResult: Boolean): List<Int> { return listOf(1, 2, 3) }');
 
 export const demoNodes: Node<FunctionNodeData>[] = [
     {
@@ -35,9 +35,9 @@ export const demoEdges: Edge[] = [
     {id: 'e2-3', source: '2', target: '3', sourceHandle: 'output', targetHandle: '0'},
 ];
 
-export const demoGraph = new FunctionCallGraph();
+export const demoGraph = new Project();
 demoGraph.addFunction(processInputData);
 demoGraph.addFunction(validateDataData);
 demoGraph.addFunction(transformDataData);
-demoGraph.addCall('1', '2');
-demoGraph.addCall('2', '3');
+demoGraph.addConnection('1', '2');
+demoGraph.addConnection('2', '3');

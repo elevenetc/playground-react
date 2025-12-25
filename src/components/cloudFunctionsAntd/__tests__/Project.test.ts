@@ -1,17 +1,17 @@
-import {FunctionCallGraph} from '../FunctionCallGraph';
-import {FunctionData} from '../FunctionData';
+import {Project} from '../Project';
+import {Function} from '../Function';
 
-describe('FunctionCallGraph', () => {
-    let graph: FunctionCallGraph;
-    let func1: FunctionData;
-    let func2: FunctionData;
-    let func3: FunctionData;
+describe('Project', () => {
+    let graph: Project;
+    let func1: Function;
+    let func2: Function;
+    let func3: Function;
 
     beforeEach(() => {
-        graph = new FunctionCallGraph();
-        func1 = new FunctionData('1', 'foo', [], 'Int', 'fun foo(): Int { return 1 }');
-        func2 = new FunctionData('2', 'bar', [['x', 'Int']], 'String', 'fun bar(x: Int): String { return x.toString() }');
-        func3 = new FunctionData('3', 'baz', [], 'Unit', 'fun baz() {}');
+        graph = new Project();
+        func1 = new Function('1', 'foo', [], 'Int', 'fun foo(): Int { return 1 }');
+        func2 = new Function('2', 'bar', [['x', 'Int']], 'String', 'fun bar(x: Int): String { return x.toString() }');
+        func3 = new Function('3', 'baz', [], 'Unit', 'fun baz() {}');
     });
 
     describe('addFunction', () => {
@@ -37,9 +37,9 @@ describe('FunctionCallGraph', () => {
         it('should remove associated calls when removing a function', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
-            graph.addCall('1', '2');
+            graph.addConnection('1', '2');
             graph.removeFunction('1');
-            expect(graph.getAllCalls()).toHaveLength(0);
+            expect(graph.getAllConnections()).toHaveLength(0);
         });
     });
 
@@ -73,18 +73,18 @@ describe('FunctionCallGraph', () => {
         it('should add a call between two functions', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
-            graph.addCall('1', '2');
-            expect(graph.getAllCalls()).toHaveLength(1);
+            graph.addConnection('1', '2');
+            expect(graph.getAllConnections()).toHaveLength(1);
         });
 
         it('should throw error if source function does not exist', () => {
             graph.addFunction(func2);
-            expect(() => graph.addCall('999', '2')).toThrow('Both source and target functions must exist');
+            expect(() => graph.addConnection('999', '2')).toThrow('Both source and target functions must exist');
         });
 
         it('should throw error if target function does not exist', () => {
             graph.addFunction(func1);
-            expect(() => graph.addCall('1', '999')).toThrow('Both source and target functions must exist');
+            expect(() => graph.addConnection('1', '999')).toThrow('Both source and target functions must exist');
         });
     });
 
@@ -92,37 +92,37 @@ describe('FunctionCallGraph', () => {
         it('should remove a call', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
-            graph.addCall('1', '2');
-            graph.removeCall('1', '2');
-            expect(graph.getAllCalls()).toHaveLength(0);
+            graph.addConnection('1', '2');
+            graph.removeConnection('1', '2');
+            expect(graph.getAllConnections()).toHaveLength(0);
         });
 
         it('should only remove the specified call', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
             graph.addFunction(func3);
-            graph.addCall('1', '2');
-            graph.addCall('2', '3');
-            graph.removeCall('1', '2');
-            expect(graph.getAllCalls()).toHaveLength(1);
-            expect(graph.getAllCalls()[0].sourceId).toBe('2');
-            expect(graph.getAllCalls()[0].targetId).toBe('3');
+            graph.addConnection('1', '2');
+            graph.addConnection('2', '3');
+            graph.removeConnection('1', '2');
+            expect(graph.getAllConnections()).toHaveLength(1);
+            expect(graph.getAllConnections()[0].outFunctionId).toBe('2');
+            expect(graph.getAllConnections()[0].inputArgumentId).toBe('3');
         });
     });
 
     describe('getOutgoingCalls', () => {
         it('should return empty array for function with no outgoing calls', () => {
             graph.addFunction(func1);
-            expect(graph.getOutgoingCalls('1')).toHaveLength(0);
+            expect(graph.getOutgoingConnections('1')).toHaveLength(0);
         });
 
         it('should return all outgoing calls', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
             graph.addFunction(func3);
-            graph.addCall('1', '2');
-            graph.addCall('1', '3');
-            const outgoing = graph.getOutgoingCalls('1');
+            graph.addConnection('1', '2');
+            graph.addConnection('1', '3');
+            const outgoing = graph.getOutgoingConnections('1');
             expect(outgoing).toHaveLength(2);
         });
     });
@@ -130,16 +130,16 @@ describe('FunctionCallGraph', () => {
     describe('getIncomingCalls', () => {
         it('should return empty array for function with no incoming calls', () => {
             graph.addFunction(func1);
-            expect(graph.getIncomingCalls('1')).toHaveLength(0);
+            expect(graph.getIncomingConnections('1')).toHaveLength(0);
         });
 
         it('should return all incoming calls', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
             graph.addFunction(func3);
-            graph.addCall('1', '3');
-            graph.addCall('2', '3');
-            const incoming = graph.getIncomingCalls('3');
+            graph.addConnection('1', '3');
+            graph.addConnection('2', '3');
+            const incoming = graph.getIncomingConnections('3');
             expect(incoming).toHaveLength(2);
         });
     });
@@ -149,16 +149,16 @@ describe('FunctionCallGraph', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
             graph.addFunction(func3);
-            graph.addCall('1', '2');
-            graph.addCall('2', '3');
+            graph.addConnection('1', '2');
+            graph.addConnection('2', '3');
             expect(graph.hasLoop()).toBe(false);
         });
 
         it('should return true for simple loop', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
-            graph.addCall('1', '2');
-            graph.addCall('2', '1');
+            graph.addConnection('1', '2');
+            graph.addConnection('2', '1');
             expect(graph.hasLoop()).toBe(true);
         });
 
@@ -166,9 +166,9 @@ describe('FunctionCallGraph', () => {
             graph.addFunction(func1);
             graph.addFunction(func2);
             graph.addFunction(func3);
-            graph.addCall('1', '2');
-            graph.addCall('2', '3');
-            graph.addCall('3', '1');
+            graph.addConnection('1', '2');
+            graph.addConnection('2', '3');
+            graph.addConnection('3', '1');
             expect(graph.hasLoop()).toBe(true);
         });
 
