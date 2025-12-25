@@ -3,7 +3,6 @@
 import {assignInlineVars} from '@vanilla-extract/dynamic';
 import * as styles from './FunctionContainer.css';
 import {cssDebugValues, cssValues, DEBUG_CSS} from './FunctionContainer.css';
-import Button from '../button/Button';
 import {FunctionData} from '../cloudFunctionsAntd/FunctionData';
 import {useFunctionCallGraph} from '../cloudFunctionsAntd/FunctionRunnerContext';
 import FunctionSignatureComponent from './FunctionSignatureComponent';
@@ -127,7 +126,7 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
                 {data.state === 'building' && 'Building...'}
                 {data.state === 'build-error' && 'Build Error'}
             </div>
-            <Button disabled={data.state !== 'idle' || isRunning} onClick={handleRunClick}>Run</Button>
+            {/*<Button disabled={data.state !== 'idle' || isRunning} onClick={handleRunClick}>Run</Button>*/}
         </div>
     </div>;
 }

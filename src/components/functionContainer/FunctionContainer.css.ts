@@ -37,20 +37,35 @@ export const codeSignature = style({
   overflow: 'auto',
   minWidth: 0,
   flex: 1,
-  padding: '0.5rem 0.5rem 0.0rem 0.5rem',
+  padding: '0.5rem 0.5rem 0.4rem 0.5rem',
 });
 
 export const statusAndRun = style({
   display: 'flex',
   justifyContent: 'space-between',
-  backgroundColor: bgColor,
+  backgroundColor: '#ff0000',
   padding: '0.0rem',
+  marginTop: 0,
+  maxHeight: 0,
+  opacity: 0,
+  overflow: 'hidden',
+  transition: 'max-height 0.3s ease, opacity 0.2s ease, margin-top 0.3s ease',
+  selectors: {
+    [`${functionContainer}:hover &`]: {
+      maxHeight: '20px',
+      opacity: 1,
+      marginTop: '0.0rem',
+    },
+  },
 });
 
 export const status = style({
-  padding: '0.5rem 0.75rem',
+  padding: '0.1rem 0.1rem 0.1rem 0.1rem',
+  marginTop: "-0.2rem",
+  marginLeft: "0.2rem",
   fontStyle: 'italic',
-  color: '#6b7280',
+  fontSize: '0.85rem',
+  color: '#ffffff',
 });
 
 export const kotlinCode = style({
