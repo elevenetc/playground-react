@@ -1,6 +1,6 @@
-import {CallController} from './CallController';
-import {FunctionCallGraph} from './FunctionCallGraph';
-import {FunctionData} from './FunctionData';
+import {CallController} from '../CallController';
+import {FunctionCallGraph} from '../FunctionCallGraph';
+import {FunctionData} from '../FunctionData';
 
 describe('ConnectionController', () => {
     let graph: FunctionCallGraph;

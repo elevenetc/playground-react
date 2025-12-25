@@ -1,6 +1,6 @@
-import {FakeFunctionRunner, FunctionStateChangeEvent} from './FakeFunctionRunner';
-import {FunctionCallGraph} from './FunctionCallGraph';
-import {FunctionData} from './FunctionData';
+import {FakeFunctionRunner, FunctionStateChangeEvent} from '../FakeFunctionRunner';
+import {FunctionCallGraph} from '../FunctionCallGraph';
+import {FunctionData} from '../FunctionData';
 
 describe('FakeFunctionRunner', () => {
     let graph: FunctionCallGraph;
@@ -38,11 +38,11 @@ describe('FakeFunctionRunner', () => {
         runner.run('1');
 
         // Should start running
-        expect(events[0]).toEqual({ functionId: '1', newState: 'running' });
+        expect(events[0]).toEqual({functionId: '1', newState: 'running'});
 
         // After 1s should be idle
         jest.advanceTimersByTime(1000);
-        expect(events[1]).toEqual({ functionId: '1', newState: 'idle' });
+        expect(events[1]).toEqual({functionId: '1', newState: 'idle'});
 
         expect(events).toHaveLength(2);
     });
@@ -58,18 +58,18 @@ describe('FakeFunctionRunner', () => {
         runner.run('1');
 
         // First function starts
-        expect(events[0]).toEqual({ functionId: '1', newState: 'running' });
+        expect(events[0]).toEqual({functionId: '1', newState: 'running'});
 
         // After 1s first completes
         jest.advanceTimersByTime(1000);
-        expect(events[1]).toEqual({ functionId: '1', newState: 'idle' });
+        expect(events[1]).toEqual({functionId: '1', newState: 'idle'});
 
         // Second function starts
-        expect(events[2]).toEqual({ functionId: '2', newState: 'running' });
+        expect(events[2]).toEqual({functionId: '2', newState: 'running'});
 
         // After 1s second completes
         jest.advanceTimersByTime(1000);
-        expect(events[3]).toEqual({ functionId: '2', newState: 'idle' });
+        expect(events[3]).toEqual({functionId: '2', newState: 'idle'});
 
         expect(events).toHaveLength(4);
     });

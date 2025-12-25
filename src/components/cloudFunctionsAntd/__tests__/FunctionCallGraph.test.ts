@@ -1,5 +1,5 @@
-import {FunctionCallGraph} from './FunctionCallGraph';
-import {FunctionData} from './FunctionData';
+import {FunctionCallGraph} from '../FunctionCallGraph';
+import {FunctionData} from '../FunctionData';
 
 describe('FunctionCallGraph', () => {
     let graph: FunctionCallGraph;
