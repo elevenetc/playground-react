@@ -6,7 +6,7 @@ import {ConfigProvider, theme} from 'antd';
 import LeftPanel from './LeftPanel';
 import RightPanel from './RightPanel';
 import {FunctionNodeData} from './FunctionNode';
-import {GraphState, HandleType, ProjectContext} from './FunctionRunnerContext';
+import {ConnectionType, ProjectContext, ProjectState} from './FunctionRunnerContext';
 import {Function, FunctionState} from './Function';
 import {CallController} from './CallController';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
@@ -38,12 +38,12 @@ export default function CloudFunctionsAntd() {
     const [api] = useState(() => new FakeCloudKotlinFunctionsApi());
     const [project] = useState(() => new Project());
     const [selectedFunction, setSelectedFunction] = useState<Function | null>(null);
-    const [state, setState] = useState<GraphState>('idle');
+    const [state, setState] = useState<ProjectState>('idle');
     const [connectionController] = useState(() => new CallController(project));
     const [connectingInfo, setConnectingInfo] = useState<{
         sourceFunctionId: string;
         sourceHandleId: string;
-        handleType: HandleType;
+        connectionType: ConnectionType;
     } | null>(null);
 
     const onNodesChange = useCallback(
@@ -204,15 +204,16 @@ export default function CloudFunctionsAntd() {
                     </div>
 
                     {/* Left Panel */}
-                    <div className="absolute top-2 left-2 bottom-2 w-[250px]">
+                    <div className="absolute top-2 left-2 bottom-2 w-[270px]">
                         <LeftPanel/>
                     </div>
 
                     {/* Right Panel */}
-                    <div className="absolute top-2 right-2 bottom-2 w-[250px]">
+                    <div className="absolute top-2 right-2 bottom-2 w-[270px]">
                         <RightPanel
                             selectedFunction={selectedFunction}
                             onCreateFunction={handleCreateFunction}
+                            onRunFunction={handleRunFunction}
                         />
                     </div>
                 </div>

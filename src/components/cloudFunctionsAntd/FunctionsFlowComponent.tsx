@@ -5,7 +5,7 @@ import {addEdge, Connection, Edge, EdgeChange, Node, NodeChange, OnConnectStartP
 import 'reactflow/dist/style.css';
 import FunctionNode, {FunctionNodeData} from './FunctionNode';
 import {CallController} from './CallController';
-import {GraphState, HandleType, useProject} from './FunctionRunnerContext';
+import {ConnectionType, ProjectState, useProject} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles, defaultEdgeOptions, edgeStyle} from './connectionStyles';
 
@@ -20,11 +20,11 @@ type FunctionsFlowComponentProps = {
     onNodesChange: (changes: NodeChange[]) => void;
     onEdgesChange: (changes: EdgeChange[]) => void;
     connectionController: CallController;
-    setState: (state: GraphState) => void;
+    setState: (state: ProjectState) => void;
     setConnectingInfo: (info: {
         sourceFunctionId: string;
         sourceHandleId: string;
-        handleType: HandleType
+        connectionType: ConnectionType
     } | null) => void;
     onPaneClick: () => void;
 };
@@ -73,7 +73,7 @@ export default function FunctionsFlowComponent({
                 setConnectingInfo({
                     sourceFunctionId: params.nodeId,
                     sourceHandleId: params.handleId,
-                    handleType: params.handleType
+                    connectionType: params.handleType
                 });
             }
         },

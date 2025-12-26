@@ -8,9 +8,10 @@ import {Function} from './Function';
 type RightPanelProps = {
     selectedFunction: Function | null;
     onCreateFunction: (sourceCode: string) => void;
+    onRunFunction: (functionId: string) => void;
 };
 
-export default function RightPanel({selectedFunction, onCreateFunction}: RightPanelProps) {
+export default function RightPanel({selectedFunction, onCreateFunction, onRunFunction}: RightPanelProps) {
     const [open, setOpen] = useState(false);
 
     const handleCreate = (sourceCode: string) => {
@@ -54,6 +55,21 @@ export default function RightPanel({selectedFunction, onCreateFunction}: RightPa
             <div className="text-white space-y-4">
                 <div>
                     <h3 className="text-lg font-semibold mb-2">Function Details</h3>
+                    <div className="flex gap-2">
+                        <Button
+                            type="primary"
+                            style={{flex: '1 1 0'}}
+                            onClick={() => onRunFunction(selectedFunction.id)}
+                        >
+                            Run
+                        </Button>
+                        <Button style={{flex: '1 1 0'}}>
+                            Edit
+                        </Button>
+                        <Button danger style={{flex: '1 1 0'}}>
+                            Delete
+                        </Button>
+                    </div>
                 </div>
 
                 <div>

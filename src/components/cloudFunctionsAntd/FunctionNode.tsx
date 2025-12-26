@@ -14,10 +14,10 @@ export type FunctionNodeData = {
 };
 
 function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
-    const graphContext = useProject();
+    const project = useProject();
     const argumentCount = data.functionData.arguments.size;
     const hasReturnValue = data.functionData.returnType !== 'Unit';
-    const isSourceNode = data.functionData.id === graphContext?.connectingInfo?.sourceFunctionId;
+    const isSourceNode = data.functionData.id === project?.connectingInfo?.sourceFunctionId;
 
     // Calculate vertical positions for argument handles aligned with parameter rows
     const getArgumentHandlePosition = (index: number) => {
@@ -28,15 +28,15 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
 
     // Check if a specific input handle can accept the current connection
     const canInputHandleConnect = (argumentIndex: number): boolean => {
-        if (!graphContext || graphContext.state !== 'connecting' || !graphContext.connectingInfo) {
+        if (!project || project.state !== 'connecting' || !project.connectingInfo) {
             return true; // Show all handles when not connecting
         }
 
-        const {sourceFunctionId, handleType} = graphContext.connectingInfo;
+        const {sourceFunctionId, connectionType} = project.connectingInfo;
 
-        if (handleType === 'source') {
+        if (connectionType === 'source') {
             // Dragging from output -> check if this input can accept it
-            return graphContext.connectionController.canBeConnected(
+            return project.connectionController.canBeConnected(
                 sourceFunctionId,
                 data.functionData.id,
                 argumentIndex
@@ -49,18 +49,18 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
 
     // Check if output handle can accept the current connection
     const canOutputHandleConnect = (): boolean => {
-        if (!graphContext || graphContext.state !== 'connecting' || !graphContext.connectingInfo) {
+        if (!project || project.state !== 'connecting' || !project.connectingInfo) {
             return true; // Show handle when not connecting
         }
 
-        const {sourceFunctionId, sourceHandleId, handleType} = graphContext.connectingInfo;
+        const {sourceFunctionId, sourceHandleId, connectionType} = project.connectingInfo;
 
-        if (handleType === 'target') {
+        if (connectionType === 'target') {
             // Dragging from input -> check if this output can connect to it
             const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);
             if (argumentIndex === null) return false;
 
-            return graphContext.connectionController.canBeConnected(
+            return project.connectionController.canBeConnected(
                 data.functionData.id,
                 sourceFunctionId,
                 argumentIndex
@@ -80,7 +80,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
             borderColor: ConnectionStyles.input.color
         };
 
-        if (graphContext?.state === 'connecting' && !isSourceNode && !canInputHandleConnect(argumentIndex)) {
+        if (project?.state === 'connecting' && !isSourceNode && !canInputHandleConnect(argumentIndex)) {
             return {
                 ...baseStyle,
                 opacity: 0.2,
@@ -109,7 +109,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
             borderColor: ConnectionStyles.output.color
         };
 
-        if (graphContext?.state === 'connecting' && !isSourceNode && !canOutputHandleConnect()) {
+        if (project?.state === 'connecting' && !isSourceNode && !canOutputHandleConnect()) {
             return {
                 ...baseStyle,
                 opacity: 0.2,

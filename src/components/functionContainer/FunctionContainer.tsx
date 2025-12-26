@@ -50,9 +50,9 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
             return true;
         }
 
-        const {sourceFunctionId, sourceHandleId, handleType} = graphContext.connectingInfo;
+        const {sourceFunctionId, sourceHandleId, connectionType} = graphContext.connectingInfo;
 
-        if (handleType === 'source') {
+        if (connectionType === 'source') {
             // Dragging from output -> check if any input can accept it
             const argumentCount = data.arguments.size;
             for (let i = 0; i < argumentCount; i++) {

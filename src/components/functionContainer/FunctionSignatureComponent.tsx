@@ -18,20 +18,20 @@ export default function FunctionSignatureComponent({
                                                        returnType,
                                                        functionId
                                                    }: FunctionSignatureProps) {
-    const graphContext = useProject();
+    const project = useProject();
     const paramEntries = Object.entries(parameters);
 
     // Check if a parameter at given index can accept the current connection
     const canParameterConnect = (parameterIndex: number, parameterType: string): boolean => {
-        if (!graphContext || !functionId || graphContext.state !== 'connecting' || !graphContext.connectingInfo) {
+        if (!project || !functionId || project.state !== 'connecting' || !project.connectingInfo) {
             return true; // Not connecting, show normal
         }
 
-        const {sourceFunctionId, handleType} = graphContext.connectingInfo;
+        const {sourceFunctionId, connectionType} = project.connectingInfo;
 
-        if (handleType === 'source') {
+        if (connectionType === 'source') {
             // Dragging from output -> check if this parameter can accept it
-            return graphContext.connectionController.canBeConnected(
+            return project.connectionController.canBeConnected(
                 sourceFunctionId,
                 functionId,
                 parameterIndex
@@ -44,13 +44,13 @@ export default function FunctionSignatureComponent({
 
     // Check if the return type can accept the current connection
     const canReturnTypeConnect = (): boolean => {
-        if (!graphContext || !functionId || graphContext.state !== 'connecting' || !graphContext.connectingInfo) {
+        if (!project || !functionId || project.state !== 'connecting' || !project.connectingInfo) {
             return true; // Not connecting, show normal
         }
 
-        const {sourceFunctionId, sourceHandleId, handleType} = graphContext.connectingInfo;
+        const {sourceFunctionId, sourceHandleId, connectionType} = project.connectingInfo;
 
-        if (handleType === 'target') {
+        if (connectionType === 'target') {
             // Dragging from input -> check if this function's output can connect to it
             if (!returnType || returnType === 'Unit') {
                 return false; // No output to connect
@@ -59,7 +59,7 @@ export default function FunctionSignatureComponent({
             const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);
             if (argumentIndex === null) return false;
 
-            return graphContext.connectionController.canBeConnected(
+            return project.connectionController.canBeConnected(
                 functionId,
                 sourceFunctionId,
                 argumentIndex
@@ -70,8 +70,8 @@ export default function FunctionSignatureComponent({
         }
     };
 
-    const isConnecting = graphContext?.state === 'connecting';
-    const isSourceNode = functionId === graphContext?.connectingInfo?.sourceFunctionId;
+    const isConnecting = project?.state === 'connecting';
+    const isSourceNode = functionId === project?.connectingInfo?.sourceFunctionId;
 
     return (
         <pre className={styles.kotlinCode}>
