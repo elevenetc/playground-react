@@ -10,9 +10,11 @@ export interface CloudKotlinFunctionsApi {
     connectionFunctions(outputFunctionId: string, inputFunctionArgumentId: string): void
 
     subscribeToFunctionEvents(
-        callback: (eventId: string, functionDto: FunctionDto, error: ErrorDto | null) => void
+        callback: (eventId: string, eventType: FunctionEventType, functionDto: FunctionDto, error: ErrorDto | null) => void
     ): void
 }
+
+export type FunctionEventType = 'created' | 'updated' | 'deleted' | 'state-changed';
 
 export type ErrorDto = {
     id: string;

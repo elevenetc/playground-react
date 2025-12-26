@@ -3,6 +3,7 @@ import {
     ErrorDto,
     FunctionConnectionDto,
     FunctionDto,
+    FunctionEventType,
     ProjectDto,
     TypeDto
 } from './CloudKotlinFunctionsApi';
@@ -17,7 +18,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private localDb: LocalDb;
     private project: Project;
     private runner: FakeFunctionRunner;
-    private eventSubscribers: Array<(eventId: string, functionDto: FunctionDto, error: ErrorDto | null) => void>;
+    private eventSubscribers: Array<(eventId: string, eventType: FunctionEventType, functionDto: FunctionDto, error: ErrorDto | null) => void>;
 
     constructor(initializeDemoData: boolean = true) {
         this.localDb = new LocalDb();
@@ -57,7 +58,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
                 };
 
                 this.eventSubscribers.forEach(callback => {
-                    callback(crypto.randomUUID(), this.functionToDto(func), errorDto);
+                    callback(crypto.randomUUID(), 'state-changed', this.functionToDto(func), errorDto);
                 });
             }
         }
@@ -71,7 +72,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         this.saveProject();
 
         this.eventSubscribers.forEach(callback => {
-            callback(crypto.randomUUID(), functionDto, null);
+            callback(crypto.randomUUID(), 'created', functionDto, null);
         });
     }
 
@@ -87,7 +88,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     }
 
     subscribeToFunctionEvents(
-        callback: (eventId: string, functionDto: FunctionDto, error: ErrorDto | null) => void
+        callback: (eventId: string, eventType: FunctionEventType, functionDto: FunctionDto, error: ErrorDto | null) => void
     ): void {
         this.eventSubscribers.push(callback);
     }
@@ -141,7 +142,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
                 this.localDb.storeFunction(functionDto);
 
                 this.eventSubscribers.forEach(callback => {
-                    callback(crypto.randomUUID(), functionDto, null);
+                    callback(crypto.randomUUID(), 'state-changed', functionDto, null);
                 });
             }
         });

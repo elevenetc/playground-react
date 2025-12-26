@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
-import { Modal } from 'antd';
+import {useEffect, useRef, useState} from 'react';
+import {Modal} from 'antd';
 import Editor from 'react-simple-code-editor';
-import { highlightKotlin } from './kotlinHighlighter';
+import {highlightKotlin} from './kotlinHighlighter';
 
 type CreateFunctionModalProps = {
     open: boolean;
     onClose: () => void;
-    onCreate: () => void;
+    onCreate: (sourceCode: string) => void;
 };
 
 export default function CreateFunctionModal({ open, onClose, onCreate }: CreateFunctionModalProps) {
@@ -71,11 +71,16 @@ export default function CreateFunctionModal({ open, onClose, onCreate }: CreateF
         onClose();
     };
 
+    const handleOk = () => {
+        onCreate(functionDetails);
+        onClose();
+    };
+
     return (
         <Modal
             title="New Function"
             open={open}
-            onOk={onCreate}
+            onOk={handleOk}
             onCancel={handleCancel}
             transitionName=""
             width={width}

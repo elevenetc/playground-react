@@ -7,13 +7,14 @@ import {Function} from './Function';
 
 type RightPanelProps = {
     selectedFunction: Function | null;
+    onCreateFunction: (sourceCode: string) => void;
 };
 
-export default function RightPanel({selectedFunction}: RightPanelProps) {
+export default function RightPanel({selectedFunction, onCreateFunction}: RightPanelProps) {
     const [open, setOpen] = useState(false);
 
-    const handleCreate = () => {
-        console.log('Function created');
+    const handleCreate = (sourceCode: string) => {
+        onCreateFunction(sourceCode);
         setOpen(false);
     };
 

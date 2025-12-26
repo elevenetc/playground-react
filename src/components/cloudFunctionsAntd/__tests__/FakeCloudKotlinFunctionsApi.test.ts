@@ -105,7 +105,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const functionId = projects[0].functions[0].id;
 
             const events: FunctionDto[] = [];
-            api.subscribeToFunctionEvents((eventId, functionDto, error) => {
+            api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
                 expect(error).toBeNull();
                 events.push(functionDto);
             });
@@ -122,7 +122,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
         it('should emit error event when function not found', () => {
             let errorReceived = false;
 
-            api.subscribeToFunctionEvents((eventId, functionDto, error) => {
+            api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
                 if (error) {
                     errorReceived = true;
                     expect(error.message).toContain('not found');
@@ -196,11 +196,11 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const events1: FunctionDto[] = [];
             const events2: FunctionDto[] = [];
 
-            api.subscribeToFunctionEvents((eventId, functionDto, error) => {
+            api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
                 events1.push(functionDto);
             });
 
-            api.subscribeToFunctionEvents((eventId, functionDto, error) => {
+            api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
                 events2.push(functionDto);
             });
 

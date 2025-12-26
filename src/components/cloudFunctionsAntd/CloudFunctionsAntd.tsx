@@ -89,7 +89,7 @@ export default function CloudFunctionsAntd() {
             setEdges(initialEdges);
         }
 
-        api.subscribeToFunctionEvents((_eventId, functionDto, error) => {
+        api.subscribeToFunctionEvents((_eventId, eventType, functionDto, error) => {
             if (error) {
                 console.error('Function error:', error);
                 return;
@@ -97,27 +97,56 @@ export default function CloudFunctionsAntd() {
 
             const func = dtoToFunction(functionDto);
 
-            setNodes((prevNodes) => {
-                const newNodes = prevNodes.map((node) => {
-                    if (node.id === functionDto.id) {
-                        return {
-                            ...node,
-                            data: {
-                                ...node.data,
-                                functionData: func,
-                            },
-                        };
-                    }
-                    return node;
+            if (eventType === 'created') {
+                // Add new function to project
+                project.addFunction(func);
+
+                // Add new function node
+                setNodes((prevNodes) => {
+                    const newNode: Node<FunctionNodeData> = {
+                        id: functionDto.id,
+                        type: 'functionNode',
+                        data: {functionData: func},
+                        position: {x: 100 + prevNodes.length * 350, y: 250},
+                    };
+                    return [...prevNodes, newNode];
                 });
+            } else if (eventType === 'state-changed') {
+                // Update function state in project
+                const existingFunc = project.getFunction(functionDto.id);
+                if (existingFunc) {
+                    existingFunc.state = func.state;
+                }
 
-                const hasRunningFunction = newNodes.some(
-                    node => node.data.functionData.state === 'running'
-                );
-                setState(hasRunningFunction ? 'running' : 'idle');
+                // Update existing function state
+                setNodes((prevNodes) => {
+                    const newNodes = prevNodes.map((node) => {
+                        if (node.id === functionDto.id) {
+                            return {
+                                ...node,
+                                data: {
+                                    ...node.data,
+                                    functionData: func,
+                                },
+                            };
+                        }
+                        return node;
+                    });
 
-                return newNodes;
-            });
+                    const hasRunningFunction = newNodes.some(
+                        node => node.data.functionData.state === 'running'
+                    );
+                    setState(hasRunningFunction ? 'running' : 'idle');
+
+                    return newNodes;
+                });
+            } else if (eventType === 'deleted') {
+                // Remove function from project
+                project.removeFunction(functionDto.id);
+
+                // Remove function node
+                setNodes((prevNodes) => prevNodes.filter(node => node.id !== functionDto.id));
+            }
 
             setSelectedFunction((prev) => {
                 if (prev && prev.id === functionDto.id) {
@@ -134,6 +163,10 @@ export default function CloudFunctionsAntd() {
 
     const handleSelectFunction = (functionData: Function) => {
         setSelectedFunction(functionData);
+    };
+
+    const handleCreateFunction = (sourceCode: string) => {
+        api.createFunction(sourceCode);
     };
 
     const handlePaneClick = () => {
@@ -177,7 +210,10 @@ export default function CloudFunctionsAntd() {
 
                     {/* Right Panel */}
                     <div className="absolute top-2 right-2 bottom-2 w-[250px]">
-                        <RightPanel selectedFunction={selectedFunction}/>
+                        <RightPanel
+                            selectedFunction={selectedFunction}
+                            onCreateFunction={handleCreateFunction}
+                        />
                     </div>
                 </div>
             </ProjectContext.Provider>
