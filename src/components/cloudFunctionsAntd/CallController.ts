@@ -1,6 +1,6 @@
 import {Project} from './Project';
 
-export class CallController {
+export class CallController { //TODO: extract canBeConnected and remove CallController
     private graph: Project;
 
     constructor(graph: Project) {

@@ -1,7 +1,7 @@
 import {Function} from './Function';
 import {FunctionConnection} from './FunctionConnection';
 
-export class Project {
+export class Project { // TODO: Rename Project to Namespace with related classes
     private functions: Map<string, Function>;
     private connections: FunctionConnection[];
 

@@ -11,7 +11,7 @@ type RightPanelProps = {
     onRunFunction: (functionId: string) => void;
 };
 
-export default function RightPanel({selectedFunction, onCreateFunction, onRunFunction}: RightPanelProps) {
+export default function RightPanel({selectedFunction, onCreateFunction, onRunFunction}: RightPanelProps) { //TODO: rename RightPanel to DetailsPanel
     const [open, setOpen] = useState(false);
 
     const handleCreate = (sourceCode: string) => {

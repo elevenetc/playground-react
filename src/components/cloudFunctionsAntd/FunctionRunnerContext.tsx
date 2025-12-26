@@ -2,7 +2,7 @@ import {createContext, useContext} from 'react';
 import {Function} from './Function';
 import {CallController} from './CallController';
 
-export type ProjectState = 'idle' | 'running' | 'connecting';
+export type ProjectState = 'idle' | 'running' | 'connecting'; //TODO: Move ProjectState to Project
 export type ConnectionType = 'source' | 'target';
 
 type ConnectingInfo = {
