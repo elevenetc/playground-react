@@ -1,13 +1,16 @@
 "use client";
 
 import {useCallback} from 'react';
-import {addEdge, Connection, Edge, EdgeChange, Node, NodeChange, OnConnectStartParams, ReactFlow} from 'reactflow';
+import {Connection, Edge, Node, NodeChange, OnConnectStartParams, ReactFlow} from 'reactflow';
 import 'reactflow/dist/style.css';
 import FunctionNode, {FunctionNodeData} from './FunctionNode';
-import {CallController} from './CallController';
-import {ConnectionType, ProjectState, useProject} from './FunctionRunnerContext';
+import {ConnectionType, ProjectState} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles, defaultEdgeOptions, edgeStyle} from './connectionStyles';
+import {useAppDispatch, useAppSelector} from './state/hooks';
+import {selectAllFunctions, selectProjectState} from './state/selectors';
+import {canBeConnected} from './canBeConnected';
+import {connectionAdded} from './state/projectSlice';
 
 const nodeTypes = {
     functionNode: FunctionNode,
@@ -16,10 +19,7 @@ const nodeTypes = {
 type FunctionsFlowComponentProps = {
     nodes: Node<FunctionNodeData>[];
     edges: Edge[];
-    setEdges: React.Dispatch<React.SetStateAction<Edge[]>>;
     onNodesChange: (changes: NodeChange[]) => void;
-    onEdgesChange: (changes: EdgeChange[]) => void;
-    connectionController: CallController;
     setState: (state: ProjectState) => void;
     setConnectingInfo: (info: {
         sourceFunctionId: string;
@@ -32,15 +32,14 @@ type FunctionsFlowComponentProps = {
 export default function FunctionsFlowComponent({
                                                    nodes,
                                                    edges,
-                                                   setEdges,
                                                    onNodesChange,
-                                                   onEdgesChange,
-                                                   connectionController,
                                                    setState,
                                                    setConnectingInfo,
                                                    onPaneClick
                                                }: FunctionsFlowComponentProps) {
-    const graphContext = useProject();
+    const dispatch = useAppDispatch();
+    const functions = useAppSelector(selectAllFunctions);
+    const projectState = useAppSelector(selectProjectState);
 
     const onConnect = useCallback(
         (connection: Connection) => {
@@ -53,17 +52,23 @@ export default function FunctionsFlowComponent({
                 return;
             }
 
-            const canConnect = connectionController.canBeConnected(
+            const canConnect = canBeConnected(
+                functions,
                 connection.source,
                 connection.target,
                 argumentIndex
             );
 
             if (canConnect) {
-                setEdges((eds) => addEdge(connection, eds));
+                // Dispatch to Redux instead of updating local state
+                dispatch(connectionAdded({
+                    outFunctionId: connection.source,
+                    targetFunctionId: connection.target,
+                    targetArgIndex: argumentIndex
+                }));
             }
         },
-        [connectionController, setEdges]
+        [functions, dispatch]
     );
 
     const onConnectStart = useCallback(
@@ -73,7 +78,7 @@ export default function FunctionsFlowComponent({
                 setConnectingInfo({
                     sourceFunctionId: params.nodeId,
                     sourceHandleId: params.handleId,
-                    connectionType: params.handleType
+                    connectionType: params.handleType as ConnectionType
                 });
             }
         },
@@ -90,7 +95,7 @@ export default function FunctionsFlowComponent({
 
     return (
         <div style={{width: '100%', height: '100%'}}
-             className={graphContext?.state === 'connecting' ? 'connecting-mode' : ''}>
+             className={projectState === 'connecting' ? 'connecting-mode' : ''}>
             <style>{`
                 .react-flow__edge.selected .react-flow__edge-path {
                     stroke: ${ConnectionStyles.selected.color} !important;
@@ -115,7 +120,6 @@ export default function FunctionsFlowComponent({
                 defaultEdgeOptions={defaultEdgeOptions}
                 connectionLineStyle={edgeStyle}
                 onNodesChange={onNodesChange}
-                onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 onConnectStart={onConnectStart}
                 onConnectEnd={onConnectEnd}
@@ -123,8 +127,6 @@ export default function FunctionsFlowComponent({
                 fitView
                 fitViewOptions={{padding: 0.2}}
                 nodesDraggable={true}
-                edgesUpdatable={true}
-                edgesFocusable={true}
                 elementsSelectable={true}
             />
         </div>
