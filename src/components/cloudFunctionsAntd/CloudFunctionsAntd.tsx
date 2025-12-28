@@ -1,74 +1,58 @@
 "use client";
 
 import {useCallback, useEffect, useState} from 'react';
-import {applyEdgeChanges, applyNodeChanges, Edge, EdgeChange, Node, NodeChange} from 'reactflow';
+import {applyNodeChanges, Node, NodeChange} from 'reactflow';
 import {ConfigProvider, theme} from 'antd';
-import LeftPanel from './LeftPanel';
-import RightPanel from './RightPanel';
+import {Provider} from 'react-redux';
+import NamespacesPanel from './NamespacesPanel';
+import DetailsPanel from './DetailsPanel';
 import {FunctionNodeData} from './FunctionNode';
-import {ConnectionType, ProjectContext, ProjectState} from './FunctionRunnerContext';
-import {Function, FunctionState} from './Function';
-import {CallController} from './CallController';
+import {Function} from './Function';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
-import {FakeCloudKotlinFunctionsApi} from './api/FakeCloudKotlinFunctionsApi';
-import {FunctionDto} from './api/CloudKotlinFunctionsApi';
-import {Project} from './Project';
+import {api} from './api/FakeCloudKotlinFunctionsApi';
+import {useAppDispatch, useAppSelector} from './state/hooks';
+import {
+    selectConnectingInfo,
+    selectEdges,
+    selectFunctionsArray,
+    selectProjectState,
+    selectSelectedFunctionId
+} from './state/selectors';
+import {projectLoaded} from './state/projectSlice';
+import {connectingInfoSet, functionSelected, projectStateChanged} from './state/uiSlice';
+import {subscribeToFunctionEvents} from './state/subscribeToFunctionEvents';
+import {FunctionConnection} from './FunctionConnection';
+import {store} from "@/components/cloudFunctionsAntd/state/store";
+import {dtoToFunction} from './dto/dtoToFunction';
 
-const dtoToFunction = (dto: FunctionDto): Function => {
-    const args: [string, string][] = dto.arguments.map(arg => [
-        arg.name,
-        arg.type.name + (arg.nullable ? '?' : '')
-    ]);
+function CloudFunctionsAntdInner() {
+    const dispatch = useAppDispatch();
+    const functions = useAppSelector(selectFunctionsArray);
+    const edges = useAppSelector(selectEdges);
+    const selectedFunctionId = useAppSelector(selectSelectedFunctionId);
+    const projectState = useAppSelector(selectProjectState);
+    const connectingInfo = useAppSelector(selectConnectingInfo);
 
-    const returnType = dto.returnType.name + (dto.returnType.nullable ? '?' : '');
-
-    return new Function(
-        dto.id,
-        dto.name,
-        args,
-        returnType,
-        dto.sourceCode,
-        dto.state as FunctionState
-    );
-};
-
-export default function CloudFunctionsAntd() {
     const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>([]);
-    const [edges, setEdges] = useState<Edge[]>([]);
-    const [api] = useState(() => new FakeCloudKotlinFunctionsApi());
-    const [project] = useState(() => new Project());
-    const [selectedFunction, setSelectedFunction] = useState<Function | null>(null);
-    const [state, setState] = useState<ProjectState>('idle');
-    const [connectionController] = useState(() => new CallController(project));
-    const [connectingInfo, setConnectingInfo] = useState<{
-        sourceFunctionId: string;
-        sourceHandleId: string;
-        connectionType: ConnectionType;
-    } | null>(null);
+    //const [api] = useState(() => new FakeCloudKotlinFunctionsApi());
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
         []
     );
 
-    const onEdgesChange = useCallback(
-        (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
-        []
-    );
-
+    // Load initial data and setup API event listener
     useEffect(() => {
         const projects = api.getProjects();
         if (projects.length > 0) {
             const projectDto = projects[0];
 
-            projectDto.functions.forEach(funcDto => {
-                const func = dtoToFunction(funcDto);
-                project.addFunction(func);
-            });
+            const functions = projectDto.functions.map(dtoToFunction);
+            const connections = projectDto.connections.map(
+                conn => new FunctionConnection(conn.outFunctionId, conn.inputArgumentId, 0)
+            );
 
-            projectDto.connections.forEach(connDto => {
-                project.addConnection(connDto.outFunctionId, connDto.inputArgumentId);
-            });
+            dispatch(projectLoaded({functions, connections}));
 
             const initialNodes: Node<FunctionNodeData>[] = projectDto.functions.map((funcDto, index) => ({
                 id: funcDto.id,
@@ -77,92 +61,68 @@ export default function CloudFunctionsAntd() {
                 position: {x: 50 + index * 350, y: 250},
             }));
 
-            const initialEdges: Edge[] = projectDto.connections.map((conn) => ({
-                id: `e-${conn.outFunctionId}-${conn.inputArgumentId}`,
-                source: conn.outFunctionId,
-                target: conn.inputArgumentId,
-                sourceHandle: 'output',
-                targetHandle: '0',
-            }));
-
             setNodes(initialNodes);
-            setEdges(initialEdges);
         }
 
-        api.subscribeToFunctionEvents((_eventId, eventType, functionDto, error) => {
-            if (error) {
-                console.error('Function error:', error);
-                return;
-            }
+        subscribeToFunctionEvents(api, dispatch);
+    }, [api, dispatch]);
 
-            const func = dtoToFunction(functionDto);
-
-            if (eventType === 'created') {
-                // Add new function to project
-                project.addFunction(func);
-
-                // Add new function node
-                setNodes((prevNodes) => {
-                    const newNode: Node<FunctionNodeData> = {
-                        id: functionDto.id,
-                        type: 'functionNode',
-                        data: {functionData: func},
-                        position: {x: 100 + prevNodes.length * 350, y: 250},
+    // Sync nodes with Redux state and update project state
+    useEffect(() => {
+        setNodes((prevNodes) => {
+            return prevNodes.map((node) => {
+                const func = functions.find(f => f.id === node.id);
+                if (func) {
+                    return {
+                        ...node,
+                        data: {
+                            ...node.data,
+                            functionData: func,
+                        },
                     };
-                    return [...prevNodes, newNode];
-                });
-            } else if (eventType === 'state-changed') {
-                // Update function state in project
-                const existingFunc = project.getFunction(functionDto.id);
-                if (existingFunc) {
-                    existingFunc.state = func.state;
                 }
-
-                // Update existing function state
-                setNodes((prevNodes) => {
-                    const newNodes = prevNodes.map((node) => {
-                        if (node.id === functionDto.id) {
-                            return {
-                                ...node,
-                                data: {
-                                    ...node.data,
-                                    functionData: func,
-                                },
-                            };
-                        }
-                        return node;
-                    });
-
-                    const hasRunningFunction = newNodes.some(
-                        node => node.data.functionData.state === 'running'
-                    );
-                    setState(hasRunningFunction ? 'running' : 'idle');
-
-                    return newNodes;
-                });
-            } else if (eventType === 'deleted') {
-                // Remove function from project
-                project.removeFunction(functionDto.id);
-
-                // Remove function node
-                setNodes((prevNodes) => prevNodes.filter(node => node.id !== functionDto.id));
-            }
-
-            setSelectedFunction((prev) => {
-                if (prev && prev.id === functionDto.id) {
-                    return func;
-                }
-                return prev;
+                return node;
             });
         });
-    }, [api, project]);
+
+        // Update project state based on running functions (but don't override 'connecting' state)
+        if (projectState !== 'connecting') {
+            const hasRunningFunction = functions.some(f => f.state === 'running');
+            const newState = hasRunningFunction ? 'running' : 'idle';
+            if (projectState !== newState) {
+                dispatch(projectStateChanged(newState));
+            }
+        }
+    }, [functions, dispatch, projectState]);
+
+    // Add/remove nodes when functions are created/deleted
+    useEffect(() => {
+        setNodes((prevNodes) => {
+            const existingNodeIds = new Set(prevNodes.map(n => n.id));
+            const functionIds = new Set(functions.map(f => f.id));
+
+            // Add new nodes
+            const newFunctions = functions.filter(f => !existingNodeIds.has(f.id));
+            const newNodes = newFunctions.map((func, index) => ({
+                id: func.id,
+                type: 'functionNode' as const,
+                data: {functionData: func},
+                position: {x: 100 + (prevNodes.length + index) * 350, y: 250},
+            }));
+
+            // Remove deleted nodes
+            const remainingNodes = prevNodes.filter(node => functionIds.has(node.id));
+
+            return [...remainingNodes, ...newNodes];
+        });
+    }, [functions]);
 
     const handleRunFunction = (functionId: string) => {
         api.runFunction(functionId);
     };
 
     const handleSelectFunction = (functionData: Function) => {
-        setSelectedFunction(functionData);
+        dispatch(functionSelected(functionData.id));
     };
 
     const handleCreateFunction = (sourceCode: string) => {
@@ -170,8 +130,18 @@ export default function CloudFunctionsAntd() {
     };
 
     const handlePaneClick = () => {
-        setSelectedFunction(null);
+        dispatch(functionSelected(null));
     };
+
+    const handleSetState = (newState: typeof projectState) => {
+        dispatch(projectStateChanged(newState));
+    };
+
+    const handleSetConnectingInfo = (info: typeof connectingInfo) => {
+        dispatch(connectingInfoSet(info));
+    };
+
+    const selectedFunction = functions.find(f => f.id === selectedFunctionId) || null;
 
     return (
         <ConfigProvider
@@ -179,45 +149,41 @@ export default function CloudFunctionsAntd() {
                 algorithm: theme.darkAlgorithm,
             }}
         >
-            <ProjectContext.Provider value={{
-                runFunction: handleRunFunction,
-                selectFunction: handleSelectFunction,
-                selectedFunctionId: selectedFunction?.id ?? null,
-                state,
-                connectionController,
-                connectingInfo
-            }}>
-                <div className="fixed inset-0">
-                    {/* ReactFlow Background */}
-                    <div className="absolute inset-0 bg-gray-900">
-                        <FunctionsFlowComponent
-                            nodes={nodes}
-                            edges={edges}
-                            setEdges={setEdges}
-                            onNodesChange={onNodesChange}
-                            onEdgesChange={onEdgesChange}
-                            connectionController={connectionController}
-                            setState={setState}
-                            setConnectingInfo={setConnectingInfo}
-                            onPaneClick={handlePaneClick}
-                        />
-                    </div>
-
-                    {/* Left Panel */}
-                    <div className="absolute top-2 left-2 bottom-2 w-[270px]">
-                        <LeftPanel/>
-                    </div>
-
-                    {/* Right Panel */}
-                    <div className="absolute top-2 right-2 bottom-2 w-[270px]">
-                        <RightPanel
-                            selectedFunction={selectedFunction}
-                            onCreateFunction={handleCreateFunction}
-                            onRunFunction={handleRunFunction}
-                        />
-                    </div>
+            <div className="fixed inset-0">
+                {/* ReactFlow Background */}
+                <div className="absolute inset-0 bg-gray-900">
+                    <FunctionsFlowComponent
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
+                        setState={handleSetState}
+                        setConnectingInfo={handleSetConnectingInfo}
+                        onPaneClick={handlePaneClick}
+                    />
                 </div>
-            </ProjectContext.Provider>
+
+                {/* Left Panel */}
+                <div className="absolute top-2 left-2 bottom-2 w-[270px]">
+                    <NamespacesPanel/>
+                </div>
+
+                {/* Right Panel */}
+                <div className="absolute top-2 right-2 bottom-2 w-[270px]">
+                    <DetailsPanel
+                        selectedFunction={selectedFunction}
+                        onCreateFunction={handleCreateFunction}
+                        onRunFunction={handleRunFunction}
+                    />
+                </div>
+            </div>
         </ConfigProvider>
+    );
+}
+
+export default function CloudFunctionsAntd() {
+    return (
+        <Provider store={store}>
+            <CloudFunctionsAntdInner/>
+        </Provider>
     );
 }

@@ -51,6 +51,12 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
                         sourceCode: "fun foo(): Unit",
                         state: "idle"
                     }
+                ],
+                connections: [
+                    {
+                        outFunctionId: "1",
+                        inputArgumentId: "1"
+                    }
                 ]
             },
         ];
@@ -103,6 +109,20 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         this.project.removeFunction(functionId);
         this.localDb.deleteFunction(functionId);
         this.saveProject();
+
+        // Emit deleted event
+        const deletedDto: FunctionDto = {
+            id: functionId,
+            name: '',
+            returnType: {name: 'Unit', nullable: false},
+            arguments: [],
+            sourceCode: '',
+            state: 'idle'
+        };
+
+        this.eventSubscribers.forEach(callback => {
+            callback(crypto.randomUUID(), 'deleted', deletedDto, null);
+        });
     }
 
     connectionFunctions(outputFunctionId: string, inputFunctionArgumentId: string): void {
