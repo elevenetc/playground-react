@@ -1,9 +1,16 @@
 export class FunctionConnection {
     outFunctionId: string;
-    inputArgumentId: string;
+    targetFunctionId: string;
+    targetArgIndex: number;
 
-    constructor(outFunctionId: string, inputArgumentId: string) {
+    constructor(outFunctionId: string, targetFunctionId: string, targetArgIndex: number = 0) {
         this.outFunctionId = outFunctionId;
-        this.inputArgumentId = inputArgumentId;
+        this.targetFunctionId = targetFunctionId;
+        this.targetArgIndex = targetArgIndex;
+    }
+
+    // Backward compatibility: map to old inputArgumentId
+    get inputArgumentId(): string {
+        return this.targetFunctionId;
     }
 }

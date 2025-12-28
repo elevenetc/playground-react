@@ -1,4 +1,4 @@
-import {FunctionDto} from "@/components/cloudFunctionsAntd/api/CloudKotlinFunctionsApi";
+import {FunctionConnectionDto, FunctionDto} from "@/components/cloudFunctionsAntd/api/CloudKotlinFunctionsApi";
 
 export type NamespaceDto = {
     id: string;
@@ -6,4 +6,5 @@ export type NamespaceDto = {
     createAt: string;
     updatedAt: string;
     functions: FunctionDto[];
+    connections: FunctionConnectionDto[];
 }
