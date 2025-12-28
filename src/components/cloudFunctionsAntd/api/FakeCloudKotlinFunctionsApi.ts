@@ -10,9 +10,11 @@ import {
 import {LocalDb} from '../db/LocalDb';
 import {FakeFunctionRunner} from '../FakeFunctionRunner';
 import {Project} from '../Project';
-import {Function, FunctionState} from '../Function';
+import {Function} from '../Function';
 import {FunctionConnection} from '../FunctionConnection';
 import {parseKotlinFunction} from './parseKotlinFunction';
+import {dtoToFunction} from '../dto/dtoToFunction';
+import {NamespaceDto} from "@/components/cloudFunctionsAntd/dto/dto";
 
 export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private localDb: LocalDb;
@@ -31,6 +33,27 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         }
         this.loadProjectFromDb();
         this.setupRunnerSubscription();
+    }
+
+    getNamespaces(): NamespaceDto[] {
+        return [
+            {
+                id: "1",
+                createAt: "aa",
+                name: "math",
+                updatedAt: "1",
+                functions: [
+                    {
+                        id: "1",
+                        name: "foo",
+                        returnType: {name: "Unit", nullable: false},
+                        arguments: [],
+                        sourceCode: "fun foo(): Unit",
+                        state: "idle"
+                    }
+                ]
+            },
+        ];
     }
 
     getProjects(): ProjectDto[] {
@@ -207,3 +230,5 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         };
     }
 }
+
+export const api = new FakeCloudKotlinFunctionsApi();
