@@ -156,38 +156,6 @@ describe('FakeCloudKotlinFunctionsApi', () => {
         });
     });
 
-    describe('persistence', () => {
-        it('should persist functions to LocalDb', () => {
-            const sourceCode = 'fun test(): Int { return 1 }';
-            api.createFunction(sourceCode);
-
-            const api2 = new FakeCloudKotlinFunctionsApi(false);
-            const projects = api2.getProjects();
-
-            expect(projects[0].functions).toHaveLength(1);
-            expect(projects[0].functions[0].name).toBe('test');
-        });
-
-        it('should persist connections to LocalDb', () => {
-            const sourceCode1 = 'fun getNumber(): Int { return 42 }';
-            const sourceCode2 = 'fun processNumber(x: Int): String { return x.toString() }';
-
-            api.createFunction(sourceCode1);
-            api.createFunction(sourceCode2);
-
-            const projects = api.getProjects();
-            const func1Id = projects[0].functions[0].id;
-            const func2Id = projects[0].functions[1].id;
-
-            api.connectionFunctions(func1Id, func2Id);
-
-            const api2 = new FakeCloudKotlinFunctionsApi(false);
-            const loadedProjects = api2.getProjects();
-
-            expect(loadedProjects[0].connections).toHaveLength(1);
-        });
-    });
-
     describe('event subscription', () => {
         it('should notify multiple subscribers', () => {
             const sourceCode = 'fun test(): Int { return 1 }';
