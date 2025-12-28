@@ -89,7 +89,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
 
     createFunction(sourceCode: string): void {
         const functionDto = parseKotlinFunction(sourceCode);
-        const func = this.dtoToFunction(functionDto);
+        const func = dtoToFunction(functionDto);
 
         this.project.addFunction(func);
         this.saveProject();
@@ -145,7 +145,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
             const projectDto = projects[0];
 
             projectDto.functions.forEach(funcDto => {
-                const func = this.dtoToFunction(funcDto);
+                const func = dtoToFunction(funcDto);
                 this.project.addFunction(func);
             });
 
@@ -193,24 +193,6 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
             sourceCode: func.sourceCode,
             state: func.state
         };
-    }
-
-    private dtoToFunction(dto: FunctionDto): Function {
-        const args: [string, string][] = dto.arguments.map(arg => [
-            arg.name,
-            arg.type.name + (arg.nullable ? '?' : '')
-        ]);
-
-        const returnType = dto.returnType.name + (dto.returnType.nullable ? '?' : '');
-
-        return new Function(
-            dto.id,
-            dto.name,
-            args,
-            returnType,
-            dto.sourceCode,
-            dto.state as FunctionState
-        );
     }
 
     private typeToDto(typeString: string): TypeDto {
