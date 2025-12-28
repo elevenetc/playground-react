@@ -11,7 +11,7 @@ type RightPanelProps = {
     onRunFunction: (functionId: string) => void;
 };
 
-export default function RightPanel({selectedFunction, onCreateFunction, onRunFunction}: RightPanelProps) { //TODO: rename RightPanel to DetailsPanel
+export default function DetailsPanel({selectedFunction, onCreateFunction, onRunFunction}: RightPanelProps) { //TODO: rename RightPanel to DetailsPanel
     const [open, setOpen] = useState(false);
 
     const handleCreate = (sourceCode: string) => {
@@ -22,8 +22,7 @@ export default function RightPanel({selectedFunction, onCreateFunction, onRunFun
     if (!selectedFunction) {
         return (
             <div className="h-full bg-gray-800/90 backdrop-blur-sm rounded-lg flex items-center justify-center p-4">
-                <div className="text-center text-white">
-                    Select or{' '}
+                <div className="flex flex-col text-center text-white">
                     <Button
                         type="link"
                         onClick={() => setOpen(true)}
@@ -33,10 +32,17 @@ export default function RightPanel({selectedFunction, onCreateFunction, onRunFun
                             textDecoration: 'underline',
                             color: 'white'
                         }}
-                    >
-                        create
-                    </Button>
-                    {' '}a function
+                    >Create function</Button>
+                    <Button
+                        type="link"
+                        onClick={() => setOpen(true)}
+                        style={{
+                            padding: 0,
+                            height: 'auto',
+                            textDecoration: 'underline',
+                            color: 'white'
+                        }}
+                    >Create namespace</Button>
                 </div>
 
                 <CreateFunctionModal
@@ -54,7 +60,7 @@ export default function RightPanel({selectedFunction, onCreateFunction, onRunFun
         <div className="h-full bg-gray-800/90 backdrop-blur-sm rounded-lg p-4 overflow-auto">
             <div className="text-white space-y-4">
                 <div>
-                    <h3 className="text-lg font-semibold mb-2">Function Details</h3>
+                    <h3 className="text-lg font-semibold mb-2">Function details</h3>
                     <div className="flex gap-2">
                         <Button
                             type="primary"
