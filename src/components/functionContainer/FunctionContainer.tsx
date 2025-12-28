@@ -41,12 +41,8 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
 
     const defaultData = new Function('default', 'calculateSum', [['a', 'Int'], ['b', 'Int']], 'Int', 'fun calculateSum(a: Int, b: Int): Int { return a + b }');
 
-    const data = functionData || defaultData;
-    const isSelected = graphContext?.selectedFunctionId === functionId;
-    const isRunning = graphContext?.state === 'running';
-
-    const canBeConnected = () => {
-        if (!graphContext || !functionId || graphContext.state !== 'connecting' || !graphContext.connectingInfo) {
+    const canBeConnectedCheck = () => {
+        if (!functionId || projectState !== 'connecting' || !connectingInfo) {
             return true;
         }
 
@@ -56,7 +52,7 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
             // Dragging from output -> check if any input can accept it
             const argumentCount = data.arguments.size;
             for (let i = 0; i < argumentCount; i++) {
-                if (graphContext.connectionController.canBeConnected(sourceFunctionId, functionId, i)) {
+                if (canBeConnected(functions, sourceFunctionId, functionId, i)) {
                     return true;
                 }
             }
@@ -70,7 +66,8 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
             const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);
             if (argumentIndex === null) return false;
 
-            return graphContext.connectionController.canBeConnected(
+            return canBeConnected(
+                functions,
                 functionId,
                 sourceFunctionId,
                 argumentIndex

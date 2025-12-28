@@ -36,7 +36,8 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
 
         if (connectionType === 'source') {
             // Dragging from output -> check if this input can accept it
-            return project.connectionController.canBeConnected(
+            return canBeConnected(
+                functions,
                 sourceFunctionId,
                 data.functionData.id,
                 argumentIndex
@@ -60,7 +61,8 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
             const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);
             if (argumentIndex === null) return false;
 
-            return project.connectionController.canBeConnected(
+            return canBeConnected(
+                functions,
                 data.functionData.id,
                 sourceFunctionId,
                 argumentIndex
