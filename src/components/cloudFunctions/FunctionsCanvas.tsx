@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactFlow, Node, Edge } from 'reactflow';
+import {Edge, Node, ReactFlow} from 'reactflow';
 import 'reactflow/dist/style.css';
 import {canvasStyle} from "@/components/cloudFunctions/FunctionsCanvasStyle.css";
 
@@ -45,7 +45,7 @@ const initialEdges: Edge[] = [
 export default function FunctionsCanvas() {
     return (
         <div className={canvasStyle}>
-            <ReactFlow
+            <ReactFlow //TODO: persist nodes locations
                 nodes={initialNodes}
                 edges={initialEdges}
                 fitView
