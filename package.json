@@ -11,6 +11,7 @@
     "test:watch": "jest --watch"
   },
   "dependencies": {
+    "@reduxjs/toolkit": "^2.11.2",
     "@vanilla-extract/css": "^1.18.0",
     "@vanilla-extract/dynamic": "^2.1.5",
     "antd": "^6.1.1",
@@ -19,6 +20,7 @@
     "prismjs": "^1.30.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "react-redux": "^9.2.0",
     "react-simple-code-editor": "^0.14.1",
     "reactflow": "^11.11.4"
   },
