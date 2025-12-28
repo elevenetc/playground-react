@@ -1,6 +1,8 @@
 import * as styles from './FunctionContainer.css';
-import {useProject} from '../cloudFunctionsAntd/FunctionRunnerContext';
 import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
+import {useAppSelector} from '../cloudFunctionsAntd/state/hooks';
+import {selectAllFunctions, selectConnectingInfo, selectProjectState} from '../cloudFunctionsAntd/state/selectors';
+import {canBeConnected} from '../cloudFunctionsAntd/canBeConnected';
 
 export const PARAMETER_LINE_HEIGHT = 20; // Matches kotlinCode lineHeight: 1.25rem (20px)
 export const SIGNATURE_FIRST_LINE_HEIGHT = 43;
@@ -18,20 +20,23 @@ export default function FunctionSignatureComponent({
                                                        returnType,
                                                        functionId
                                                    }: FunctionSignatureProps) {
-    const project = useProject();
+    const functions = useAppSelector(selectAllFunctions);
+    const projectState = useAppSelector(selectProjectState);
+    const connectingInfo = useAppSelector(selectConnectingInfo);
     const paramEntries = Object.entries(parameters);
 
     // Check if a parameter at given index can accept the current connection
     const canParameterConnect = (parameterIndex: number, parameterType: string): boolean => {
-        if (!project || !functionId || project.state !== 'connecting' || !project.connectingInfo) {
+        if (!functionId || projectState !== 'connecting' || !connectingInfo) {
             return true; // Not connecting, show normal
         }
 
-        const {sourceFunctionId, connectionType} = project.connectingInfo;
+        const {sourceFunctionId, connectionType} = connectingInfo;
 
         if (connectionType === 'source') {
             // Dragging from output -> check if this parameter can accept it
-            return project.connectionController.canBeConnected(
+            return canBeConnected(
+                functions,
                 sourceFunctionId,
                 functionId,
                 parameterIndex
@@ -44,11 +49,11 @@ export default function FunctionSignatureComponent({
 
     // Check if the return type can accept the current connection
     const canReturnTypeConnect = (): boolean => {
-        if (!project || !functionId || project.state !== 'connecting' || !project.connectingInfo) {
+        if (!functionId || projectState !== 'connecting' || !connectingInfo) {
             return true; // Not connecting, show normal
         }
 
-        const {sourceFunctionId, sourceHandleId, connectionType} = project.connectingInfo;
+        const {sourceFunctionId, sourceHandleId, connectionType} = connectingInfo;
 
         if (connectionType === 'target') {
             // Dragging from input -> check if this function's output can connect to it
@@ -59,7 +64,8 @@ export default function FunctionSignatureComponent({
             const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);
             if (argumentIndex === null) return false;
 
-            return project.connectionController.canBeConnected(
+            return canBeConnected(
+                functions,
                 functionId,
                 sourceFunctionId,
                 argumentIndex
@@ -70,8 +76,8 @@ export default function FunctionSignatureComponent({
         }
     };
 
-    const isConnecting = project?.state === 'connecting';
-    const isSourceNode = functionId === project?.connectingInfo?.sourceFunctionId;
+    const isConnecting = projectState === 'connecting';
+    const isSourceNode = functionId === connectingInfo?.sourceFunctionId;
 
     return (
         <pre className={styles.kotlinCode}>
