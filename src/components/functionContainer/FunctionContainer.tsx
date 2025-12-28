@@ -4,10 +4,18 @@ import {assignInlineVars} from '@vanilla-extract/dynamic';
 import * as styles from './FunctionContainer.css';
 import {cssDebugValues, cssValues, DEBUG_CSS} from './FunctionContainer.css';
 import {Function} from '../cloudFunctionsAntd/Function';
-import {useProject} from '../cloudFunctionsAntd/FunctionRunnerContext';
 import FunctionSignatureComponent from './FunctionSignatureComponent';
 import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
 import {Button} from "antd";
+import {useAppDispatch, useAppSelector} from '../cloudFunctionsAntd/state/hooks';
+import {functionSelected} from '../cloudFunctionsAntd/state/uiSlice';
+import {
+    selectAllFunctions,
+    selectConnectingInfo,
+    selectProjectState,
+    selectSelectedFunctionId
+} from '../cloudFunctionsAntd/state/selectors';
+import {canBeConnected} from '../cloudFunctionsAntd/canBeConnected';
 
 const MAX_WIDTH = 300;
 const MAX_HEIGHT = 250;
@@ -19,34 +27,41 @@ type FunctionContainerProps = {
     functionData?: Function;
     functionId?: string;
     onClick?: () => void;
+    onRunFunction?: (functionId: string) => void;
 };
 
-export default function FunctionContainer({functionData, functionId, onClick}: FunctionContainerProps) {
-    const graphContext = useProject();
+export default function FunctionContainer({functionData, functionId, onClick, onRunFunction}: FunctionContainerProps) {
+    const dispatch = useAppDispatch();
+    const functions = useAppSelector(selectAllFunctions);
+    const selectedFunctionId = useAppSelector(selectSelectedFunctionId);
+    const projectState = useAppSelector(selectProjectState);
+    const connectingInfo = useAppSelector(selectConnectingInfo);
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (graphContext && functionData) {
-            graphContext.selectFunction(functionData);
+        if (functionData) {
+            dispatch(functionSelected(functionData.id));
         }
         onClick?.();
     };
 
     const handleRunClick = (e?: React.MouseEvent) => {
         e?.stopPropagation();
-        if (functionId && graphContext) {
-            graphContext.runFunction(functionId);
+        if (functionId && onRunFunction) {
+            onRunFunction(functionId);
         }
     };
 
-    const defaultData = new Function('default', 'calculateSum', [['a', 'Int'], ['b', 'Int']], 'Int', 'fun calculateSum(a: Int, b: Int): Int { return a + b }');
+    const data = functionData!;
+    const isSelected = selectedFunctionId === functionId;
+    const isRunning = projectState === 'running';
 
     const canBeConnectedCheck = () => {
         if (!functionId || projectState !== 'connecting' || !connectingInfo) {
             return true;
         }
 
-        const {sourceFunctionId, sourceHandleId, connectionType} = graphContext.connectingInfo;
+        const {sourceFunctionId, sourceHandleId, connectionType} = connectingInfo;
 
         if (connectionType === 'source') {
             // Dragging from output -> check if any input can accept it
@@ -75,8 +90,8 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
         }
     };
 
-    const isSourceNode = functionId === graphContext?.connectingInfo?.sourceFunctionId;
-    const shouldDim = graphContext?.state === 'connecting' && !isSourceNode && !canBeConnected();
+    const isSourceNode = functionId === connectingInfo?.sourceFunctionId;
+    const shouldDim = projectState === 'connecting' && !isSourceNode && !canBeConnectedCheck();
 
     const getBorderStyle = () => {
         if (isSelected) {
@@ -112,7 +127,7 @@ export default function FunctionContainer({functionData, functionId, onClick}: F
         <div id="codeSignature" className={styles.codeSignature}>
             <FunctionSignatureComponent
                 functionName={data.name}
-                parameters={data.getArgumentsAsRecord()}
+                parameters={Object.fromEntries(data?.arguments)}
                 returnType={data.returnType}
                 functionId={functionId}
             />
