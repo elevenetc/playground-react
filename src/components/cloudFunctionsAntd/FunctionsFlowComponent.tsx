@@ -8,9 +8,10 @@ import {ConnectionType, ProjectState} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles, defaultEdgeOptions, edgeStyle} from './connectionStyles';
 import {useAppDispatch, useAppSelector} from './state/hooks';
-import {selectAllFunctions, selectProjectState} from './state/selectors';
+import {selectAllFunctions, selectNamespaceIdByFunctionId, selectProjectState} from './state/selectors';
 import {canBeConnected} from './canBeConnected';
-import {connectionAdded} from './state/projectSlice';
+import {connectionAdded} from './namespaces/namespacesSlice';
+import {store} from './state/store';
 
 const nodeTypes = {
     functionNode: FunctionNode,
@@ -60,12 +61,19 @@ export default function FunctionsFlowComponent({
             );
 
             if (canConnect) {
-                // Dispatch to Redux instead of updating local state
-                dispatch(connectionAdded({
-                    outFunctionId: connection.source,
-                    targetFunctionId: connection.target,
-                    targetArgIndex: argumentIndex
-                }));
+                // Find namespace for the target function
+                const state = store.getState();
+                const namespaceIdSelector = selectNamespaceIdByFunctionId(connection.target);
+                const namespaceId = namespaceIdSelector(state);
+
+                if (namespaceId) {
+                    dispatch(connectionAdded({
+                        namespaceId,
+                        outFunctionId: connection.source,
+                        targetFunctionId: connection.target,
+                        targetArgIndex: argumentIndex
+                    }));
+                }
             }
         },
         [functions, dispatch]

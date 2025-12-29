@@ -6,6 +6,6 @@ export type Function = {
     returnType: string;
     arguments: Map<string, string>;
     sourceCode: string;
-    state: string;
+    state: FunctionState;
     errorMessage?: string;
 };

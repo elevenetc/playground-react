@@ -1,25 +1,28 @@
 import {FakeFunctionRunner, FunctionStateChangeEvent} from '../FakeFunctionRunner';
-import {Project} from '../Project';
-import {Function} from '../Function';
+import type {Function} from '../Function';
+import {FunctionConnection} from '../FunctionConnection';
+import {createFunction} from './testHelpers';
 
 describe('FakeFunctionRunner', () => {
-    let graph: Project;
+    let functions: Map<string, Function>;
+    let connections: FunctionConnection[];
     let runner: FakeFunctionRunner;
     let func1: Function;
     let func2: Function;
     let func3: Function;
 
     beforeEach(() => {
-        graph = new Project();
-        func1 = new Function('1', 'foo', [], 'Int', 'fun foo(): Int { return 1 }', 'idle');
-        func2 = new Function('2', 'bar', [['x', 'Int']], 'String', 'fun bar(x: Int): String { return x.toString() }', 'idle');
-        func3 = new Function('3', 'baz', [], 'Unit', 'fun baz() {}', 'idle');
+        functions = new Map();
+        connections = [];
+        func1 = createFunction('1', 'foo', [], 'Int', 'fun foo(): Int { return 1 }');
+        func2 = createFunction('2', 'bar', [['x', 'Int']], 'String', 'fun bar(x: Int): String { return x.toString() }');
+        func3 = createFunction('3', 'baz', [], 'Unit', 'fun baz() {}');
 
-        graph.addFunction(func1);
-        graph.addFunction(func2);
-        graph.addFunction(func3);
+        functions.set(func1.id, func1);
+        functions.set(func2.id, func2);
+        functions.set(func3.id, func3);
 
-        runner = new FakeFunctionRunner(graph);
+        runner = new FakeFunctionRunner(functions, connections);
 
         // Use fake timers
         jest.useFakeTimers();
@@ -48,7 +51,7 @@ describe('FakeFunctionRunner', () => {
     });
 
     it('two chained functions both execute in sequence', () => {
-        graph.addConnection('1', '2');
+        connections.push(new FunctionConnection('1', '2'));
 
         const events: FunctionStateChangeEvent[] = [];
         runner.subscribeOnFunctionStateChange((event) => {
@@ -75,7 +78,7 @@ describe('FakeFunctionRunner', () => {
     });
 
     it('disconnected function is not called when chained functions run', () => {
-        graph.addConnection('1', '2');
+        connections.push(new FunctionConnection('1', '2'));
         // func3 is disconnected
 
         const events: FunctionStateChangeEvent[] = [];

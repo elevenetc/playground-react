@@ -18,12 +18,11 @@ import {
     selectProjectState,
     selectSelectedFunctionId
 } from './state/selectors';
-import {projectLoaded} from './state/projectSlice';
 import {connectingInfoSet, functionSelected, projectStateChanged} from './state/uiSlice';
 import {subscribeToFunctionEvents} from './state/subscribeToFunctionEvents';
-import {FunctionConnection} from './FunctionConnection';
 import {store} from "@/components/cloudFunctionsAntd/state/store";
-import {dtoToFunction} from './dto/dtoToFunction';
+import {namespacesUpserted} from './namespaces/namespacesSlice';
+import {dtoToNamespace} from './dto/dtoToNamespace';
 
 function CloudFunctionsAntdInner() {
     const dispatch = useAppDispatch();
@@ -34,7 +33,7 @@ function CloudFunctionsAntdInner() {
     const connectingInfo = useAppSelector(selectConnectingInfo);
 
     const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>([]);
-    //const [api] = useState(() => new FakeCloudKotlinFunctionsApi());
+    const [defaultNamespaceId, setDefaultNamespaceId] = useState<string | null>(null);
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -43,29 +42,36 @@ function CloudFunctionsAntdInner() {
 
     // Load initial data and setup API event listener
     useEffect(() => {
-        const projects = api.getProjects();
-        if (projects.length > 0) {
-            const projectDto = projects[0];
+        const namespaceDtos = api.getNamespaces();
+        if (namespaceDtos.length > 0) {
+            const namespaces = namespaceDtos.map(dtoToNamespace);
+            dispatch(namespacesUpserted(namespaces));
 
-            const functions = projectDto.functions.map(dtoToFunction);
-            const connections = projectDto.connections.map(
-                conn => new FunctionConnection(conn.outFunctionId, conn.inputArgumentId, 0)
-            );
+            // Set the first namespace as default for new functions
+            setDefaultNamespaceId(namespaces[0].id);
 
-            dispatch(projectLoaded({functions, connections}));
-
-            const initialNodes: Node<FunctionNodeData>[] = projectDto.functions.map((funcDto, index) => ({
-                id: funcDto.id,
-                type: 'functionNode',
-                data: {functionData: dtoToFunction(funcDto)},
-                position: {x: 50 + index * 350, y: 250},
-            }));
+            // Create initial nodes from all functions in all namespaces
+            const initialNodes: Node<FunctionNodeData>[] = [];
+            let nodeIndex = 0;
+            namespaces.forEach(namespace => {
+                namespace.functions.forEach(func => {
+                    initialNodes.push({
+                        id: func.id,
+                        type: 'functionNode',
+                        data: {functionData: func},
+                        position: {x: 50 + nodeIndex * 350, y: 250},
+                    });
+                    nodeIndex++;
+                });
+            });
 
             setNodes(initialNodes);
         }
 
-        subscribeToFunctionEvents(api, dispatch);
-    }, [api, dispatch]);
+        if (defaultNamespaceId) {
+            subscribeToFunctionEvents(api, dispatch, store.getState, defaultNamespaceId);
+        }
+    }, [dispatch]);
 
     // Sync nodes with Redux state and update project state
     useEffect(() => {

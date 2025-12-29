@@ -1,5 +1,7 @@
+import {NamespaceDto} from '../dto/dto';
+
 export interface CloudKotlinFunctionsApi {
-    getProjects(): ProjectDto[]
+    getNamespaces(): NamespaceDto[]
 
     runFunction(functionId: string): void
 

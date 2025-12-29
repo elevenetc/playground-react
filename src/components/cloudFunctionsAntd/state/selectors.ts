@@ -3,12 +3,38 @@ import {RootState} from './store';
 import {Function} from '../Function';
 import {Edge} from 'reactflow';
 import {CallConnectionUtils} from '../callConnectionUtils';
+import {namespacesSelectors} from '../namespaces/namespacesSlice';
+import {FunctionConnection} from '../FunctionConnection';
 
-export const selectAllFunctions = (state: RootState) => state.project.functions;
-export const selectAllConnections = (state: RootState) => state.project.connections;
 export const selectSelectedFunctionId = (state: RootState) => state.ui.selectedFunctionId;
 export const selectProjectState = (state: RootState) => state.ui.projectState;
 export const selectConnectingInfo = (state: RootState) => state.ui.connectingInfo;
+
+// Aggregate all functions from all namespaces
+export const selectAllFunctions = createSelector(
+    [namespacesSelectors.selectAll],
+    (namespaces): Record<string, Function> => {
+        const functionsMap: Record<string, Function> = {};
+        namespaces.forEach(namespace => {
+            namespace.functions.forEach(func => {
+                functionsMap[func.id] = func;
+            });
+        });
+        return functionsMap;
+    }
+);
+
+// Aggregate all connections from all namespaces
+export const selectAllConnections = createSelector(
+    [namespacesSelectors.selectAll],
+    (namespaces): FunctionConnection[] => {
+        const connections: FunctionConnection[] = [];
+        namespaces.forEach(namespace => {
+            connections.push(...namespace.connections);
+        });
+        return connections;
+    }
+);
 
 export const selectFunctionsArray = createSelector(
     [selectAllFunctions],
@@ -37,3 +63,13 @@ export const selectEdges = createSelector(
         targetHandle: CallConnectionUtils.createInputId(conn.targetArgIndex),
     }))
 );
+
+// Helper to find which namespace a function belongs to
+export const selectNamespaceIdByFunctionId = (functionId: string) =>
+    createSelector(
+        [namespacesSelectors.selectAll],
+        (namespaces): string | null => {
+            const namespace = namespaces.find(ns => ns.functions.some(f => f.id === functionId));
+            return namespace?.id || null;
+        }
+    );

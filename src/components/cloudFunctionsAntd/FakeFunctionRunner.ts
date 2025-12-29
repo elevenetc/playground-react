@@ -1,5 +1,5 @@
-import {Project} from './Project';
-import {FunctionState} from './Function';
+import {Function, FunctionState} from './Function';
+import {FunctionConnection} from './FunctionConnection';
 
 export type FunctionStateChangeEvent = {
     functionId: string;
@@ -7,11 +7,13 @@ export type FunctionStateChangeEvent = {
 };
 
 export class FakeFunctionRunner {
-    private graph: Project;
+    private functions: Map<string, Function>;
+    private connections: FunctionConnection[];
     private subscribers: Array<(event: FunctionStateChangeEvent) => void>;
 
-    constructor(graph: Project) {
-        this.graph = graph;
+    constructor(functions: Map<string, Function>, connections: FunctionConnection[]) {
+        this.functions = functions;
+        this.connections = connections;
         this.subscribers = [];
     }
 
@@ -20,7 +22,7 @@ export class FakeFunctionRunner {
     }
 
     run(functionId: string): void {
-        const func = this.graph.getFunction(functionId);
+        const func = this.functions.get(functionId);
 
         if (!func) {
             throw new Error(`Function with id ${functionId} not found`);
@@ -38,9 +40,9 @@ export class FakeFunctionRunner {
             this.notifySubscribers({ functionId, newState: 'idle' });
 
             // Check for outgoing calls and run them
-            const outgoingCalls = this.graph.getOutgoingConnections(functionId);
+            const outgoingCalls = this.connections.filter(conn => conn.outFunctionId === functionId);
             outgoingCalls.forEach(call => {
-                const targetFunc = this.graph.getFunction(call.inputArgumentId);
+                const targetFunc = this.functions.get(call.inputArgumentId);
                 if (targetFunc && targetFunc.state === 'idle') {
                     this.run(call.inputArgumentId);
                 }

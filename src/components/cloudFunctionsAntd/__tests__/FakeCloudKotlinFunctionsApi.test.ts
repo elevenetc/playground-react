@@ -40,11 +40,11 @@ describe('FakeCloudKotlinFunctionsApi', () => {
 
             api.createFunction(sourceCode);
 
-            const projects = api.getProjects();
-            expect(projects).toHaveLength(1);
-            expect(projects[0].functions).toHaveLength(1);
+            const namespaces = api.getNamespaces();
+            expect(namespaces).toHaveLength(1);
+            expect(namespaces[0].functions).toHaveLength(1);
 
-            const func = projects[0].functions[0];
+            const func = namespaces[0].functions[0];
             expect(func.name).toBe('add');
             expect(func.arguments).toHaveLength(2);
             expect(func.arguments[0].name).toBe('a');
@@ -60,8 +60,8 @@ describe('FakeCloudKotlinFunctionsApi', () => {
 
             api.createFunction(sourceCode);
 
-            const projects = api.getProjects();
-            const func = projects[0].functions[0];
+            const namespaces = api.getNamespaces();
+            const func = namespaces[0].functions[0];
 
             expect(func.name).toBe('getValue');
             expect(func.arguments).toHaveLength(0);
@@ -73,8 +73,8 @@ describe('FakeCloudKotlinFunctionsApi', () => {
 
             api.createFunction(sourceCode);
 
-            const projects = api.getProjects();
-            const func = projects[0].functions[0];
+            const namespaces = api.getNamespaces();
+            const func = namespaces[0].functions[0];
 
             expect(func.name).toBe('doSomething');
             expect(func.returnType.name).toBe('Unit');
@@ -86,13 +86,13 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const sourceCode = 'fun test(): Int { return 1 }';
             api.createFunction(sourceCode);
 
-            let projects = api.getProjects();
-            const functionId = projects[0].functions[0].id;
+            let namespaces = api.getNamespaces();
+            const functionId = namespaces[0].functions[0].id;
 
             api.deleteFunction(functionId);
 
-            projects = api.getProjects();
-            expect(projects[0].functions).toHaveLength(0);
+            namespaces = api.getNamespaces();
+            expect(namespaces[0].functions).toHaveLength(0);
         });
     });
 
@@ -101,8 +101,8 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const sourceCode = 'fun test(): Int { return 1 }';
             api.createFunction(sourceCode);
 
-            const projects = api.getProjects();
-            const functionId = projects[0].functions[0].id;
+            const namespaces = api.getNamespaces();
+            const functionId = namespaces[0].functions[0].id;
 
             const events: FunctionDto[] = [];
             api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
@@ -143,16 +143,16 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             api.createFunction(sourceCode1);
             api.createFunction(sourceCode2);
 
-            const projects = api.getProjects();
-            const func1Id = projects[0].functions[0].id;
-            const func2Id = projects[0].functions[1].id;
+            const namespaces = api.getNamespaces();
+            const func1Id = namespaces[0].functions[0].id;
+            const func2Id = namespaces[0].functions[1].id;
 
             api.connectionFunctions(func1Id, func2Id);
 
-            const updatedProjects = api.getProjects();
-            expect(updatedProjects[0].connections).toHaveLength(1);
-            expect(updatedProjects[0].connections[0].outFunctionId).toBe(func1Id);
-            expect(updatedProjects[0].connections[0].inputArgumentId).toBe(func2Id);
+            const updatedNamespaces = api.getNamespaces();
+            expect(updatedNamespaces[0].connections).toHaveLength(1);
+            expect(updatedNamespaces[0].connections[0].outFunctionId).toBe(func1Id);
+            expect(updatedNamespaces[0].connections[0].inputArgumentId).toBe(func2Id);
         });
     });
 
@@ -172,8 +172,8 @@ describe('FakeCloudKotlinFunctionsApi', () => {
                 events2.push(functionDto);
             });
 
-            const projects = api.getProjects();
-            const functionId = projects[0].functions[0].id;
+            const namespaces = api.getNamespaces();
+            const functionId = namespaces[0].functions[0].id;
 
             api.runFunction(functionId);
             jest.advanceTimersByTime(1000);
