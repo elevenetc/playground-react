@@ -38,7 +38,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
         it('should create a function from source code', () => {
             const sourceCode = 'fun add(a: Int, b: Int): Int { return a + b }';
 
-            api.createFunction(sourceCode);
+            api.createFunction('default', sourceCode);
 
             const namespaces = api.getNamespaces();
             expect(namespaces).toHaveLength(1);
@@ -58,7 +58,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
         it('should handle functions with no parameters', () => {
             const sourceCode = 'fun getValue(): String { return "test" }';
 
-            api.createFunction(sourceCode);
+            api.createFunction('default', sourceCode);
 
             const namespaces = api.getNamespaces();
             const func = namespaces[0].functions[0];
@@ -71,7 +71,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
         it('should handle Unit return type', () => {
             const sourceCode = 'fun doSomething() { println("test") }';
 
-            api.createFunction(sourceCode);
+            api.createFunction('default', sourceCode);
 
             const namespaces = api.getNamespaces();
             const func = namespaces[0].functions[0];
@@ -84,7 +84,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
     describe('deleteFunction', () => {
         it('should delete a function', () => {
             const sourceCode = 'fun test(): Int { return 1 }';
-            api.createFunction(sourceCode);
+            api.createFunction('default', sourceCode);
 
             let namespaces = api.getNamespaces();
             const functionId = namespaces[0].functions[0].id;
@@ -99,7 +99,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
     describe('runFunction', () => {
         it('should run a function and emit state change events', () => {
             const sourceCode = 'fun test(): Int { return 1 }';
-            api.createFunction(sourceCode);
+            api.createFunction('default', sourceCode);
 
             const namespaces = api.getNamespaces();
             const functionId = namespaces[0].functions[0].id;
@@ -140,8 +140,8 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const sourceCode1 = 'fun getNumber(): Int { return 42 }';
             const sourceCode2 = 'fun processNumber(x: Int): String { return x.toString() }';
 
-            api.createFunction(sourceCode1);
-            api.createFunction(sourceCode2);
+            api.createFunction('default', sourceCode1);
+            api.createFunction('default', sourceCode2);
 
             const namespaces = api.getNamespaces();
             const func1Id = namespaces[0].functions[0].id;
@@ -159,7 +159,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
     describe('event subscription', () => {
         it('should notify multiple subscribers', () => {
             const sourceCode = 'fun test(): Int { return 1 }';
-            api.createFunction(sourceCode);
+            api.createFunction('default', sourceCode);
 
             const events1: FunctionDto[] = [];
             const events2: FunctionDto[] = [];

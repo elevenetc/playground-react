@@ -16,9 +16,9 @@ const uiSlice = createSlice({
         functionSelected: (state, action: PayloadAction<string | null>) => {
             state.selectedFunctionId = action.payload;
         },
-        // namespaceSelected: (state, action: PayloadAction<string | null>) => {
-        //     state.selectedNamespaceId = action.payload;
-        // },
+        namespaceSelected: (state, action: PayloadAction<string | null>) => {
+            state.selectedNamespaceId = action.payload;
+        },
         projectStateChanged: (state, action: PayloadAction<ProjectState>) => {
             state.projectState = action.payload;
         },
@@ -28,7 +28,6 @@ const uiSlice = createSlice({
     },
 });
 
-export const {functionSelected, projectStateChanged, connectingInfoSet} = uiSlice.actions;
-//export const {functionSelected, connectingInfoSet} = uiSlice.actions;
+export const {functionSelected, namespaceSelected, projectStateChanged, connectingInfoSet} = uiSlice.actions;
 
 export default uiSlice.reducer;

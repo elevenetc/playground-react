@@ -7,7 +7,7 @@ export interface CloudKotlinFunctionsApi {
 
     runFunction(functionId: string): void
 
-    createFunction(sourceCode: string): void
+    createFunction(namespaceId: string, sourceCode: string): void
 
     deleteFunction(functionId: string): void
 

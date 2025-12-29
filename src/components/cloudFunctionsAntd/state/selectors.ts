@@ -7,6 +7,7 @@ import {namespacesSelectors} from '../namespaces/namespacesSlice';
 import {FunctionConnection} from '../FunctionConnection';
 
 export const selectSelectedFunctionId = (state: RootState) => state.ui.selectedFunctionId;
+export const selectSelectedNamespaceId = (state: RootState) => state.ui.selectedNamespaceId;
 export const selectProjectState = (state: RootState) => state.ui.projectState;
 export const selectConnectingInfo = (state: RootState) => state.ui.connectingInfo;
 

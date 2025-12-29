@@ -16,7 +16,8 @@ import {
     selectEdges,
     selectFunctionsArray,
     selectProjectState,
-    selectSelectedFunctionId
+    selectSelectedFunctionId,
+    selectSelectedNamespaceId
 } from './state/selectors';
 import {connectingInfoSet, functionSelected, projectStateChanged} from './state/uiSlice';
 import {subscribeToFunctionEvents} from './state/subscribeToFunctionEvents';
@@ -29,11 +30,11 @@ function CloudFunctionsAntdInner() {
     const functions = useAppSelector(selectFunctionsArray);
     const edges = useAppSelector(selectEdges);
     const selectedFunctionId = useAppSelector(selectSelectedFunctionId);
+    const selectedNamespaceId = useAppSelector(selectSelectedNamespaceId);
     const projectState = useAppSelector(selectProjectState);
     const connectingInfo = useAppSelector(selectConnectingInfo);
 
     const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>([]);
-    const [defaultNamespaceId, setDefaultNamespaceId] = useState<string | null>(null);
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
@@ -46,9 +47,6 @@ function CloudFunctionsAntdInner() {
         if (namespaceDtos.length > 0) {
             const namespaces = namespaceDtos.map(dtoToNamespace);
             dispatch(namespacesUpserted(namespaces));
-
-            // Set the first namespace as default for new functions
-            setDefaultNamespaceId(namespaces[0].id);
 
             // Create initial nodes from all functions in all namespaces
             const initialNodes: Node<FunctionNodeData>[] = [];
@@ -68,10 +66,10 @@ function CloudFunctionsAntdInner() {
             setNodes(initialNodes);
         }
 
-        if (defaultNamespaceId) {
-            subscribeToFunctionEvents(api, dispatch, store.getState, defaultNamespaceId);
+        if (selectedNamespaceId) {
+            subscribeToFunctionEvents(api, dispatch, store.getState, selectedNamespaceId);
         }
-    }, [dispatch]);
+    }, [dispatch, selectedNamespaceId]);
 
     // Sync nodes with Redux state and update project state
     useEffect(() => {
@@ -132,7 +130,11 @@ function CloudFunctionsAntdInner() {
     };
 
     const handleCreateFunction = (sourceCode: string) => {
-        api.createFunction(sourceCode);
+        if (!selectedNamespaceId) {
+            console.error('No namespace selected');
+            return;
+        }
+        api.createFunction(selectedNamespaceId, sourceCode);
     };
 
     const handlePaneClick = () => {

@@ -10,8 +10,8 @@ import {NamespaceDto} from "@/components/cloudFunctionsAntd/dto/dto";
 export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private localDb: LocalDb;
     private namespaces: Map<string, NamespaceDto>;
-    private currentNamespaceId: string;
     private functions: Map<string, Function>;
+    private functionToNamespace: Map<string, string>;
     private connections: FunctionConnection[];
     private runner: FakeFunctionRunner;
     private eventSubscribers: Array<(eventId: string, eventType: FunctionEventType, functionDto: FunctionDto, error: ErrorDto | null) => void>;
@@ -19,8 +19,8 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     constructor(initializeDemoData: boolean = true) {
         this.localDb = new LocalDb();
         this.namespaces = new Map();
-        this.currentNamespaceId = 'default';
         this.functions = new Map();
+        this.functionToNamespace = new Map();
         this.connections = [];
         this.runner = new FakeFunctionRunner(this.functions, this.connections);
         this.eventSubscribers = [];
@@ -70,12 +70,21 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         }
     }
 
-    createFunction(sourceCode: string): void {
+    createFunction(namespaceId: string, sourceCode: string): void {
+        const namespace = this.namespaces.get(namespaceId);
+        if (!namespace) {
+            throw new Error(`Namespace ${namespaceId} not found`);
+        }
+
         const functionDto = parseKotlinFunction(sourceCode);
         const func = dtoToFunction(functionDto);
 
         this.functions.set(func.id, func);
-        this.saveNamespace();
+        this.functionToNamespace.set(func.id, namespaceId);
+
+        namespace.functions.push(functionDto);
+        namespace.updatedAt = new Date().toISOString();
+        this.saveAllNamespaces();
 
         this.eventSubscribers.forEach(callback => {
             callback(crypto.randomUUID(), 'created', functionDto, null);
@@ -83,7 +92,17 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     }
 
     deleteFunction(functionId: string): void {
+        const namespaceId = this.functionToNamespace.get(functionId);
+        if (namespaceId) {
+            const namespace = this.namespaces.get(namespaceId);
+            if (namespace) {
+                namespace.functions = namespace.functions.filter(f => f.id !== functionId);
+                namespace.updatedAt = new Date().toISOString();
+            }
+        }
+
         this.functions.delete(functionId);
+        this.functionToNamespace.delete(functionId);
         this.connections = this.connections.filter(
             conn => conn.outFunctionId !== functionId && conn.targetFunctionId !== functionId
         );
@@ -127,9 +146,9 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         const func2 = 'fun validateData(data: String, dataStr: String, dataInt: Int): Boolean { return data.isNotEmpty() }';
         const func3 = 'fun transformData(validationResult: Boolean): List<Int> { return listOf(1, 2, 3) }';
 
-        this.createFunction(func1);
-        this.createFunction(func2);
-        this.createFunction(func3);
+        this.createFunction('default', func1);
+        this.createFunction('default', func2);
+        this.createFunction('default', func3);
 
         const allNamespaces = this.getNamespaces();
         if (allNamespaces.length > 0 && allNamespaces[0].functions.length >= 3) {
@@ -157,34 +176,40 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         } else {
             namespaces.forEach(ns => {
                 this.namespaces.set(ns.id, ns);
-            });
 
-            const currentNamespace = this.namespaces.get(this.currentNamespaceId);
-            if (currentNamespace) {
-                currentNamespace.functions.forEach(funcDto => {
+                ns.functions.forEach(funcDto => {
                     const func = dtoToFunction(funcDto);
                     this.functions.set(func.id, func);
+                    this.functionToNamespace.set(func.id, ns.id);
                 });
 
-                currentNamespace.connections.forEach(connDto => {
+                ns.connections.forEach(connDto => {
                     this.connections.push(new FunctionConnection(connDto.outFunctionId, connDto.inputArgumentId, 0));
                 });
-            }
+            });
         }
     }
 
     private syncCurrentNamespaceToStore(): void {
-        const allFunctions = Array.from(this.functions.values());
-        const currentNamespace = this.namespaces.get(this.currentNamespaceId);
+        this.namespaces.forEach(namespace => {
+            namespace.functions = namespace.functions.map(funcDto => {
+                const func = this.functions.get(funcDto.id);
+                if (func) {
+                    return this.functionToDto(func);
+                }
+                return funcDto;
+            });
 
-        if (currentNamespace) {
-            currentNamespace.functions = allFunctions.map(f => this.functionToDto(f));
-            currentNamespace.connections = this.connections.map(c => ({
-                outFunctionId: c.outFunctionId,
-                inputArgumentId: c.inputArgumentId
-            }));
-            currentNamespace.updatedAt = new Date().toISOString();
-        }
+            const functionIdsInNamespace = new Set(namespace.functions.map(f => f.id));
+            namespace.connections = this.connections
+                .filter(c => functionIdsInNamespace.has(c.outFunctionId) && functionIdsInNamespace.has(c.inputArgumentId))
+                .map(c => ({
+                    outFunctionId: c.outFunctionId,
+                    inputArgumentId: c.inputArgumentId
+                }));
+
+            namespace.updatedAt = new Date().toISOString();
+        });
     }
 
     private saveAllNamespaces(): void {
