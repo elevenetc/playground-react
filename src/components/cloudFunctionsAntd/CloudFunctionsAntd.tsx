@@ -6,6 +6,7 @@ import {ConfigProvider, theme} from 'antd';
 import {Provider} from 'react-redux';
 import NamespacesPanel from './NamespacesPanel';
 import DetailsPanel from './DetailsPanel';
+import MenuPanel from './MenuPanel';
 import {FunctionNodeData} from './FunctionNode';
 import {Function} from './Function';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
@@ -168,6 +169,11 @@ function CloudFunctionsAntdInner() {
                         setConnectingInfo={handleSetConnectingInfo}
                         onPaneClick={handlePaneClick}
                     />
+                </div>
+
+                {/* Top Menu */}
+                <div className="absolute top-2 left-[286px] right-[286px]">
+                    <MenuPanel/>
                 </div>
 
                 {/* Left Panel */}
