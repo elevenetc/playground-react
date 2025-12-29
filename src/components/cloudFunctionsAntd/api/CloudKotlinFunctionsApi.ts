@@ -3,6 +3,8 @@ import {NamespaceDto} from '../dto/dto';
 export interface CloudKotlinFunctionsApi {
     getNamespaces(): NamespaceDto[]
 
+    createNamespace(name: string): void
+
     runFunction(functionId: string): void
 
     createFunction(sourceCode: string): void

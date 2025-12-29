@@ -9,6 +9,8 @@ import {NamespaceDto} from "@/components/cloudFunctionsAntd/dto/dto";
 
 export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private localDb: LocalDb;
+    private namespaces: Map<string, NamespaceDto>;
+    private currentNamespaceId: string;
     private functions: Map<string, Function>;
     private connections: FunctionConnection[];
     private runner: FakeFunctionRunner;
@@ -16,34 +18,37 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
 
     constructor(initializeDemoData: boolean = true) {
         this.localDb = new LocalDb();
+        this.namespaces = new Map();
+        this.currentNamespaceId = 'default';
         this.functions = new Map();
         this.connections = [];
         this.runner = new FakeFunctionRunner(this.functions, this.connections);
         this.eventSubscribers = [];
 
+        this.loadNamespacesFromDb();
         if (initializeDemoData) {
             this.initializeDemoDataIfNeeded();
         }
-        this.loadNamespaceFromDb();
         this.setupRunnerSubscription();
     }
 
     getNamespaces(): NamespaceDto[] {
-        const allFunctions = Array.from(this.functions.values());
+        this.syncCurrentNamespaceToStore();
+        return Array.from(this.namespaces.values());
+    }
 
-        return [
-            {
-                id: "default",
-                createAt: new Date().toISOString(),
-                name: "default",
-                updatedAt: new Date().toISOString(),
-                functions: allFunctions.map(f => this.functionToDto(f)),
-                connections: this.connections.map(c => ({
-                    outFunctionId: c.outFunctionId,
-                    inputArgumentId: c.inputArgumentId
-                }))
-            },
-        ];
+    createNamespace(name: string): void {
+        const newNamespace: NamespaceDto = {
+            id: crypto.randomUUID(),
+            name: name,
+            createAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            functions: [],
+            connections: []
+        };
+
+        this.namespaces.set(newNamespace.id, newNamespace);
+        this.saveAllNamespaces();
     }
 
 
@@ -136,20 +141,57 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         this.localDb.markAsInitialized();
     }
 
-    private loadNamespaceFromDb(): void {
+    private loadNamespacesFromDb(): void {
         const namespaces = this.localDb.getNamespaces();
-        if (namespaces.length > 0) {
-            const namespaceDto = namespaces[0];
 
-            namespaceDto.functions.forEach(funcDto => {
-                const func = dtoToFunction(funcDto);
-                this.functions.set(func.id, func);
+        if (namespaces.length === 0) {
+            const defaultNamespace: NamespaceDto = {
+                id: 'default',
+                name: 'default',
+                createAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                functions: [],
+                connections: []
+            };
+            this.namespaces.set(defaultNamespace.id, defaultNamespace);
+        } else {
+            namespaces.forEach(ns => {
+                this.namespaces.set(ns.id, ns);
             });
 
-            namespaceDto.connections.forEach(connDto => {
-                this.connections.push(new FunctionConnection(connDto.outFunctionId, connDto.inputArgumentId, 0));
-            });
+            const currentNamespace = this.namespaces.get(this.currentNamespaceId);
+            if (currentNamespace) {
+                currentNamespace.functions.forEach(funcDto => {
+                    const func = dtoToFunction(funcDto);
+                    this.functions.set(func.id, func);
+                });
+
+                currentNamespace.connections.forEach(connDto => {
+                    this.connections.push(new FunctionConnection(connDto.outFunctionId, connDto.inputArgumentId, 0));
+                });
+            }
         }
+    }
+
+    private syncCurrentNamespaceToStore(): void {
+        const allFunctions = Array.from(this.functions.values());
+        const currentNamespace = this.namespaces.get(this.currentNamespaceId);
+
+        if (currentNamespace) {
+            currentNamespace.functions = allFunctions.map(f => this.functionToDto(f));
+            currentNamespace.connections = this.connections.map(c => ({
+                outFunctionId: c.outFunctionId,
+                inputArgumentId: c.inputArgumentId
+            }));
+            currentNamespace.updatedAt = new Date().toISOString();
+        }
+    }
+
+    private saveAllNamespaces(): void {
+        this.syncCurrentNamespaceToStore();
+        this.namespaces.forEach(namespace => {
+            this.localDb.storeNamespace(namespace);
+        });
     }
 
     private setupRunnerSubscription(): void {
@@ -169,10 +211,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     }
 
     private saveNamespace(): void {
-        const namespaces = this.getNamespaces();
-        if (namespaces.length > 0) {
-            this.localDb.storeNamespace(namespaces[0]);
-        }
+        this.saveAllNamespaces();
     }
 
     private functionToDto(func: Function): FunctionDto {
