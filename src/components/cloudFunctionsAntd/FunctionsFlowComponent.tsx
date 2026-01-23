@@ -7,12 +7,8 @@ import FunctionNode, {FunctionNodeData} from './FunctionNode';
 import {ConnectionType, NamespaceState} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles, defaultEdgeOptions, edgeStyle} from './connectionStyles';
-import {useAppDispatch, useAppSelector} from './state/hooks';
-import {Function} from './Function';
-import {selectNamespaceIdByFunctionId, selectNamespaceState, selectSelectedNamespaceFunctions} from './state/selectors';
+import {useStore} from './state/store';
 import {canBeConnected} from './canBeConnected';
-import {connectionAdded} from './namespaces/namespacesSlice';
-import {store} from './state/store';
 
 const nodeTypes = {
     functionNode: FunctionNode,
@@ -39,9 +35,8 @@ export default function FunctionsFlowComponent({
                                                    setConnectingInfo,
                                                    onPaneClick
                                                }: FunctionsFlowComponentProps) {
-    const dispatch = useAppDispatch();
-    const functions: Record<string, Function> = useAppSelector(selectSelectedNamespaceFunctions);
-    const namespaceState = useAppSelector(selectNamespaceState);
+    const {namespaceState, getSelectedNamespaceFunctions, findNamespaceIdByFunctionId, addConnection} = useStore();
+    const functions = getSelectedNamespaceFunctions();
 
     const onConnect = useCallback(
         (connection: Connection) => {
@@ -62,22 +57,13 @@ export default function FunctionsFlowComponent({
             );
 
             if (canConnect) {
-                // Find namespace for the target function
-                const state = store.getState();
-                const namespaceIdSelector = selectNamespaceIdByFunctionId(connection.target);
-                const namespaceId = namespaceIdSelector(state);
-
+                const namespaceId = findNamespaceIdByFunctionId(connection.target);
                 if (namespaceId) {
-                    dispatch(connectionAdded({
-                        namespaceId,
-                        outFunctionId: connection.source,
-                        targetFunctionId: connection.target,
-                        targetArgIndex: argumentIndex
-                    }));
+                    addConnection(namespaceId, connection.source, connection.target, argumentIndex);
                 }
             }
         },
-        [functions, dispatch]
+        [functions, findNamespaceIdByFunctionId, addConnection]
     );
 
     const onConnectStart = useCallback(

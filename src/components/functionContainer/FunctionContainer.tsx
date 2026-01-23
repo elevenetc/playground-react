@@ -7,14 +7,7 @@ import {Function} from '../cloudFunctionsAntd/Function';
 import FunctionSignatureComponent from './FunctionSignatureComponent';
 import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
 import {Button} from "antd";
-import {useAppDispatch, useAppSelector} from '../cloudFunctionsAntd/state/hooks';
-import {functionSelected} from '../cloudFunctionsAntd/state/uiSlice';
-import {
-    selectConnectingInfo,
-    selectNamespaceState,
-    selectSelectedFunctionId,
-    selectSelectedNamespaceFunctions
-} from '../cloudFunctionsAntd/state/selectors';
+import {useStore} from '../cloudFunctionsAntd/state/store';
 import {canBeConnected} from '../cloudFunctionsAntd/canBeConnected';
 
 const MAX_WIDTH = 300;
@@ -31,16 +24,19 @@ type FunctionContainerProps = {
 };
 
 export default function FunctionContainer({functionData, functionId, onClick, onRunFunction}: FunctionContainerProps) {
-    const dispatch = useAppDispatch();
-    const functions: Record<string, Function> = useAppSelector(selectSelectedNamespaceFunctions);
-    const selectedFunctionId = useAppSelector(selectSelectedFunctionId);
-    const namespaceState = useAppSelector(selectNamespaceState);
-    const connectingInfo = useAppSelector(selectConnectingInfo);
+    const {
+        selectedFunctionId,
+        namespaceState,
+        connectingInfo,
+        selectFunction,
+        getSelectedNamespaceFunctions
+    } = useStore();
+    const functions = getSelectedNamespaceFunctions();
 
     const handleClick = (e: React.MouseEvent) => {
         e.stopPropagation();
         if (functionData) {
-            dispatch(functionSelected(functionData.id));
+            selectFunction(functionData.id);
         }
         onClick?.();
     };
@@ -64,7 +60,6 @@ export default function FunctionContainer({functionData, functionId, onClick, on
         const {sourceFunctionId, sourceHandleId, connectionType} = connectingInfo;
 
         if (connectionType === 'source') {
-            // Dragging from output -> check if any input can accept it
             const argumentCount = data.arguments.size;
             for (let i = 0; i < argumentCount; i++) {
                 if (canBeConnected(functions, sourceFunctionId, functionId, i)) {
@@ -73,9 +68,8 @@ export default function FunctionContainer({functionData, functionId, onClick, on
             }
             return false;
         } else {
-            // Dragging from input -> check if this function's output can connect to it
             if (data.returnType === 'Unit') {
-                return false; // No output to connect
+                return false;
             }
 
             const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);

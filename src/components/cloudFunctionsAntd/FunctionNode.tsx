@@ -7,40 +7,33 @@ import {Function} from './Function';
 import {PARAMETER_LINE_HEIGHT, SIGNATURE_FIRST_LINE_HEIGHT} from '../functionContainer/FunctionSignatureComponent';
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles} from './connectionStyles';
-import {useAppSelector} from './state/hooks';
-import {selectConnectingInfo, selectNamespaceState, selectSelectedNamespaceFunctions} from './state/selectors';
+import {useStore} from './state/store';
 import {canBeConnected} from './canBeConnected';
 
 export type FunctionNodeData = {
     functionData: Function;
 };
 
-function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
-    const functions = useAppSelector(selectSelectedNamespaceFunctions);
-    const namespaceState = useAppSelector(selectNamespaceState);
-    const connectingInfo = useAppSelector(selectConnectingInfo);
+function FunctionNode({data}: NodeProps<FunctionNodeData>) {
+    const {namespaceState, connectingInfo, getSelectedNamespaceFunctions} = useStore();
+    const functions = getSelectedNamespaceFunctions();
 
     const argumentCount = data.functionData.arguments.size;
     const hasReturnValue = data.functionData.returnType !== 'Unit';
     const isSourceNode = data.functionData.id === connectingInfo?.sourceFunctionId;
 
-    // Calculate vertical positions for argument handles aligned with parameter rows
     const getArgumentHandlePosition = (index: number) => {
-        // Position handle at center of parameter line
-        // First line is "fun functionName(", then parameters start
         return SIGNATURE_FIRST_LINE_HEIGHT + (PARAMETER_LINE_HEIGHT * index) + (PARAMETER_LINE_HEIGHT / 2);
     };
 
-    // Check if a specific input handle can accept the current connection
     const canInputHandleConnect = (argumentIndex: number): boolean => {
         if (namespaceState !== 'connecting' || !connectingInfo) {
-            return true; // Show all handles when not connecting
+            return true;
         }
 
         const {sourceFunctionId, connectionType} = connectingInfo;
 
         if (connectionType === 'source') {
-            // Dragging from output -> check if this input can accept it
             return canBeConnected(
                 functions,
                 sourceFunctionId,
@@ -48,21 +41,18 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
                 argumentIndex
             );
         } else {
-            // Dragging from input -> dim all other inputs
             return false;
         }
     };
 
-    // Check if output handle can accept the current connection
     const canOutputHandleConnect = (): boolean => {
         if (namespaceState !== 'connecting' || !connectingInfo) {
-            return true; // Show handle when not connecting
+            return true;
         }
 
         const {sourceFunctionId, sourceHandleId, connectionType} = connectingInfo;
 
         if (connectionType === 'target') {
-            // Dragging from input -> check if this output can connect to it
             const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);
             if (argumentIndex === null) return false;
 
@@ -73,12 +63,10 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
                 argumentIndex
             );
         } else {
-            // Dragging from output -> dim all other outputs
             return false;
         }
     };
 
-    // Get style for input handle based on connection compatibility
     const getInputHandleStyle = (argumentIndex: number) => {
         const baseStyle = {
             top: `${getArgumentHandlePosition(argumentIndex)}px`,
@@ -98,7 +86,6 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
         return baseStyle;
     };
 
-    // Calculate vertical position for output handle aligned with return type
     const getOutputHandlePosition = () => {
         if (argumentCount === 0) {
             return SIGNATURE_FIRST_LINE_HEIGHT / 1.3;
@@ -107,7 +94,6 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
         }
     };
 
-    // Get style for output handle based on connection compatibility
     const getOutputHandleStyle = () => {
         const baseStyle = {
             top: `${getOutputHandlePosition()}px`,
@@ -129,7 +115,6 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
 
     return (
         <>
-            {/* Left side - input handles (one per argument) */}
             {argumentCount > 0 && (
                 <>
                     {Array.from({length: argumentCount}, (_, index) => {
@@ -152,7 +137,6 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
                 functionId={data.functionData.id}
             />
 
-            {/* Right side - output handle (for return value) */}
             {hasReturnValue && (
                 <Handle
                     type="source"

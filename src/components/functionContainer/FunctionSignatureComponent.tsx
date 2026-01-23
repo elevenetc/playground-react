@@ -1,14 +1,9 @@
 import * as styles from './FunctionContainer.css';
 import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
-import {useAppSelector} from '../cloudFunctionsAntd/state/hooks';
-import {
-    selectConnectingInfo,
-    selectNamespaceState,
-    selectSelectedNamespaceFunctions
-} from '../cloudFunctionsAntd/state/selectors';
+import {useStore} from '../cloudFunctionsAntd/state/store';
 import {canBeConnected} from '../cloudFunctionsAntd/canBeConnected';
 
-export const PARAMETER_LINE_HEIGHT = 20; // Matches kotlinCode lineHeight: 1.25rem (20px)
+export const PARAMETER_LINE_HEIGHT = 20;
 export const SIGNATURE_FIRST_LINE_HEIGHT = 43;
 
 type FunctionSignatureProps = {
@@ -24,21 +19,18 @@ export default function FunctionSignatureComponent({
                                                        returnType,
                                                        functionId
                                                    }: FunctionSignatureProps) {
-    const functions = useAppSelector(selectSelectedNamespaceFunctions);
-    const namespaceState = useAppSelector(selectNamespaceState);
-    const connectingInfo = useAppSelector(selectConnectingInfo);
+    const {namespaceState, connectingInfo, getSelectedNamespaceFunctions} = useStore();
+    const functions = getSelectedNamespaceFunctions();
     const paramEntries = Object.entries(parameters);
 
-    // Check if a parameter at given index can accept the current connection
-    const canParameterConnect = (parameterIndex: number, parameterType: string): boolean => {
+    const canParameterConnect = (parameterIndex: number, _parameterType: string): boolean => {
         if (!functionId || namespaceState !== 'connecting' || !connectingInfo) {
-            return true; // Not connecting, show normal
+            return true;
         }
 
         const {sourceFunctionId, connectionType} = connectingInfo;
 
         if (connectionType === 'source') {
-            // Dragging from output -> check if this parameter can accept it
             return canBeConnected(
                 functions,
                 sourceFunctionId,
@@ -46,23 +38,20 @@ export default function FunctionSignatureComponent({
                 parameterIndex
             );
         } else {
-            // Dragging from input -> dim all parameters (looking for outputs, not inputs)
             return false;
         }
     };
 
-    // Check if the return type can accept the current connection
     const canReturnTypeConnect = (): boolean => {
         if (!functionId || namespaceState !== 'connecting' || !connectingInfo) {
-            return true; // Not connecting, show normal
+            return true;
         }
 
         const {sourceFunctionId, sourceHandleId, connectionType} = connectingInfo;
 
         if (connectionType === 'target') {
-            // Dragging from input -> check if this function's output can connect to it
             if (!returnType || returnType === 'Unit') {
-                return false; // No output to connect
+                return false;
             }
 
             const argumentIndex = CallConnectionUtils.parseInputIndex(sourceHandleId);
@@ -75,7 +64,6 @@ export default function FunctionSignatureComponent({
                 argumentIndex
             );
         } else {
-            // Dragging from output -> dim all return types (looking for inputs, not outputs)
             return false;
         }
     };

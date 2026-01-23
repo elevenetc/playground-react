@@ -4,11 +4,10 @@ import {Button, Dropdown} from 'antd';
 import {AppstoreAddOutlined, InfoCircleOutlined} from '@ant-design/icons';
 import CreateNamespaceModal from './CreateNamespaceModal';
 import {api} from './api/FakeCloudKotlinFunctionsApi';
-import {useAppDispatch} from './state/hooks';
-import {fetchNamespaces} from './namespaces/namespacesSlice';
+import {useStore} from './state/store';
 
 export default function MenuPanel() {
-    const dispatch = useAppDispatch();
+    const {fetchNamespaces} = useStore();
     const [showCreateNamespaceModal, setShowCreateNamespaceModal] = useState(false);
 
     const handleMenuClick: MenuProps['onClick'] = ({key}) => {
@@ -21,7 +20,7 @@ export default function MenuPanel() {
 
     const handleCreateNamespace = (name: string) => {
         api.createNamespace(name);
-        dispatch(fetchNamespaces());
+        fetchNamespaces();
         setShowCreateNamespaceModal(false);
     };
 

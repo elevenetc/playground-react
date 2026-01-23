@@ -4,8 +4,7 @@ import type {Namespace} from './namespaces/Namespace';
 import CreateNamespaceModal from './CreateNamespaceModal';
 import CreateFunctionModal from './CreateFunctionModal';
 import {api} from './api/FakeCloudKotlinFunctionsApi';
-import {useAppDispatch} from './state/hooks';
-import {fetchNamespaces} from './namespaces/namespacesSlice';
+import {useStore} from './state/store';
 
 const {Text} = Typography;
 
@@ -15,13 +14,13 @@ type NamespaceDetailsViewProps = {
 };
 
 export default function NamespaceDetailsView({selectedNamespace, onCreateFunction}: NamespaceDetailsViewProps) {
-    const dispatch = useAppDispatch();
+    const {fetchNamespaces} = useStore();
     const [showCreateNamespaceModal, setShowCreateNamespaceModal] = useState(false);
     const [showCreateFunctionModal, setShowCreateFunctionModal] = useState(false);
 
     const handleCreateNamespace = (name: string) => {
         api.createNamespace(name);
-        dispatch(fetchNamespaces());
+        fetchNamespaces();
         setShowCreateNamespaceModal(false);
     };
 

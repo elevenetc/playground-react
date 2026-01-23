@@ -2,9 +2,7 @@
 
 import {Tabs} from 'antd';
 import {Function} from './Function';
-import {useAppSelector} from './state/hooks';
-import {selectSelectedNamespaceId} from './state/selectors';
-import {namespacesSelectors} from './namespaces/namespacesSlice';
+import {useStore} from './state/store';
 import NamespaceDetailsView from './NamespaceDetailsView';
 import FunctionDetailsView from './FunctionDetailsView';
 
@@ -15,11 +13,8 @@ type DetailsPanelProps = {
 };
 
 export default function DetailsPanel({selectedFunction, onCreateFunction, onRunFunction}: DetailsPanelProps) {
-    const selectedNamespaceId = useAppSelector(selectSelectedNamespaceId);
-    const namespaces = useAppSelector(namespacesSelectors.selectAll);
-    const selectedNamespace = selectedNamespaceId
-        ? namespaces.find(ns => ns.id === selectedNamespaceId) || null
-        : null;
+    const {selectedNamespaceId, getSelectedNamespace} = useStore();
+    const selectedNamespace = selectedNamespaceId ? getSelectedNamespace() : null;
 
     const items = [
         {
