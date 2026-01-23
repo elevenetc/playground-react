@@ -8,7 +8,7 @@ import {PARAMETER_LINE_HEIGHT, SIGNATURE_FIRST_LINE_HEIGHT} from '../functionCon
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles} from './connectionStyles';
 import {useAppSelector} from './state/hooks';
-import {selectAllFunctions, selectConnectingInfo, selectProjectState} from './state/selectors';
+import {selectConnectingInfo, selectNamespaceState, selectSelectedNamespaceFunctions} from './state/selectors';
 import {canBeConnected} from './canBeConnected';
 
 export type FunctionNodeData = {
@@ -16,8 +16,8 @@ export type FunctionNodeData = {
 };
 
 function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
-    const functions = useAppSelector(selectAllFunctions);
-    const projectState = useAppSelector(selectProjectState);
+    const functions = useAppSelector(selectSelectedNamespaceFunctions);
+    const namespaceState = useAppSelector(selectNamespaceState);
     const connectingInfo = useAppSelector(selectConnectingInfo);
 
     const argumentCount = data.functionData.arguments.size;
@@ -33,7 +33,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
 
     // Check if a specific input handle can accept the current connection
     const canInputHandleConnect = (argumentIndex: number): boolean => {
-        if (projectState !== 'connecting' || !connectingInfo) {
+        if (namespaceState !== 'connecting' || !connectingInfo) {
             return true; // Show all handles when not connecting
         }
 
@@ -55,7 +55,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
 
     // Check if output handle can accept the current connection
     const canOutputHandleConnect = (): boolean => {
-        if (projectState !== 'connecting' || !connectingInfo) {
+        if (namespaceState !== 'connecting' || !connectingInfo) {
             return true; // Show handle when not connecting
         }
 
@@ -87,7 +87,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
             borderColor: ConnectionStyles.input.color
         };
 
-        if (projectState === 'connecting' && !isSourceNode && !canInputHandleConnect(argumentIndex)) {
+        if (namespaceState === 'connecting' && !isSourceNode && !canInputHandleConnect(argumentIndex)) {
             return {
                 ...baseStyle,
                 opacity: 0.2,
@@ -116,7 +116,7 @@ function FunctionNode({ data }: NodeProps<FunctionNodeData>) {
             borderColor: ConnectionStyles.output.color
         };
 
-        if (projectState === 'connecting' && !isSourceNode && !canOutputHandleConnect()) {
+        if (namespaceState === 'connecting' && !isSourceNode && !canOutputHandleConnect()) {
             return {
                 ...baseStyle,
                 opacity: 0.2,

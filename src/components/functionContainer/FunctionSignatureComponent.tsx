@@ -1,7 +1,11 @@
 import * as styles from './FunctionContainer.css';
 import {CallConnectionUtils} from '../cloudFunctionsAntd/callConnectionUtils';
 import {useAppSelector} from '../cloudFunctionsAntd/state/hooks';
-import {selectAllFunctions, selectConnectingInfo, selectProjectState} from '../cloudFunctionsAntd/state/selectors';
+import {
+    selectConnectingInfo,
+    selectNamespaceState,
+    selectSelectedNamespaceFunctions
+} from '../cloudFunctionsAntd/state/selectors';
 import {canBeConnected} from '../cloudFunctionsAntd/canBeConnected';
 
 export const PARAMETER_LINE_HEIGHT = 20; // Matches kotlinCode lineHeight: 1.25rem (20px)
@@ -20,14 +24,14 @@ export default function FunctionSignatureComponent({
                                                        returnType,
                                                        functionId
                                                    }: FunctionSignatureProps) {
-    const functions = useAppSelector(selectAllFunctions);
-    const projectState = useAppSelector(selectProjectState);
+    const functions = useAppSelector(selectSelectedNamespaceFunctions);
+    const namespaceState = useAppSelector(selectNamespaceState);
     const connectingInfo = useAppSelector(selectConnectingInfo);
     const paramEntries = Object.entries(parameters);
 
     // Check if a parameter at given index can accept the current connection
     const canParameterConnect = (parameterIndex: number, parameterType: string): boolean => {
-        if (!functionId || projectState !== 'connecting' || !connectingInfo) {
+        if (!functionId || namespaceState !== 'connecting' || !connectingInfo) {
             return true; // Not connecting, show normal
         }
 
@@ -49,7 +53,7 @@ export default function FunctionSignatureComponent({
 
     // Check if the return type can accept the current connection
     const canReturnTypeConnect = (): boolean => {
-        if (!functionId || projectState !== 'connecting' || !connectingInfo) {
+        if (!functionId || namespaceState !== 'connecting' || !connectingInfo) {
             return true; // Not connecting, show normal
         }
 
@@ -76,7 +80,7 @@ export default function FunctionSignatureComponent({
         }
     };
 
-    const isConnecting = projectState === 'connecting';
+    const isConnecting = namespaceState === 'connecting';
     const isSourceNode = functionId === connectingInfo?.sourceFunctionId;
 
     return (

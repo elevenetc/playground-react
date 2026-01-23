@@ -8,7 +8,7 @@ import {FunctionConnection} from '../FunctionConnection';
 
 export const selectSelectedFunctionId = (state: RootState) => state.ui.selectedFunctionId;
 export const selectSelectedNamespaceId = (state: RootState) => state.ui.selectedNamespaceId;
-export const selectProjectState = (state: RootState) => state.ui.projectState;
+export const selectNamespaceState = (state: RootState) => state.ui.namespaceState;
 export const selectConnectingInfo = (state: RootState) => state.ui.connectingInfo;
 
 // Aggregate all functions from all namespaces
@@ -37,8 +37,36 @@ export const selectAllConnections = createSelector(
     }
 );
 
+// Get functions from selected namespace only
+export const selectSelectedNamespaceFunctions = createSelector(
+    [namespacesSelectors.selectAll, selectSelectedNamespaceId],
+    (namespaces, selectedNamespaceId): Record<string, Function> => {
+        if (!selectedNamespaceId) return {};
+
+        const selectedNamespace = namespaces.find(ns => ns.id === selectedNamespaceId);
+        if (!selectedNamespace) return {};
+
+        const functionsMap: Record<string, Function> = {};
+        selectedNamespace.functions.forEach(func => {
+            functionsMap[func.id] = func;
+        });
+        return functionsMap;
+    }
+);
+
+// Get connections from selected namespace only
+export const selectSelectedNamespaceConnections = createSelector(
+    [namespacesSelectors.selectAll, selectSelectedNamespaceId],
+    (namespaces, selectedNamespaceId): FunctionConnection[] => {
+        if (!selectedNamespaceId) return [];
+
+        const selectedNamespace = namespaces.find(ns => ns.id === selectedNamespaceId);
+        return selectedNamespace?.connections || [];
+    }
+);
+
 export const selectFunctionsArray = createSelector(
-    [selectAllFunctions],
+    [selectSelectedNamespaceFunctions],
     (functions): Function[] => Object.values(functions)
 );
 
@@ -53,9 +81,9 @@ export const selectSelectedFunction = createSelector(
 export const selectFunctionById = (id: string) =>
     createSelector([selectAllFunctions], (functions): Function | undefined => functions[id]);
 
-// Derive ReactFlow edges from Redux connections
+// Derive ReactFlow edges from Redux connections (from selected namespace only)
 export const selectEdges = createSelector(
-    [selectAllConnections],
+    [selectSelectedNamespaceConnections],
     (connections): Edge[] => connections.map((conn) => ({
         id: `e-${conn.outFunctionId}-${conn.targetFunctionId}-${conn.targetArgIndex}`,
         source: conn.outFunctionId,

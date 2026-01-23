@@ -10,10 +10,10 @@ import {Button} from "antd";
 import {useAppDispatch, useAppSelector} from '../cloudFunctionsAntd/state/hooks';
 import {functionSelected} from '../cloudFunctionsAntd/state/uiSlice';
 import {
-    selectAllFunctions,
     selectConnectingInfo,
-    selectProjectState,
-    selectSelectedFunctionId
+    selectNamespaceState,
+    selectSelectedFunctionId,
+    selectSelectedNamespaceFunctions
 } from '../cloudFunctionsAntd/state/selectors';
 import {canBeConnected} from '../cloudFunctionsAntd/canBeConnected';
 
@@ -32,9 +32,9 @@ type FunctionContainerProps = {
 
 export default function FunctionContainer({functionData, functionId, onClick, onRunFunction}: FunctionContainerProps) {
     const dispatch = useAppDispatch();
-    const functions = useAppSelector(selectAllFunctions);
+    const functions: Record<string, Function> = useAppSelector(selectSelectedNamespaceFunctions);
     const selectedFunctionId = useAppSelector(selectSelectedFunctionId);
-    const projectState = useAppSelector(selectProjectState);
+    const namespaceState = useAppSelector(selectNamespaceState);
     const connectingInfo = useAppSelector(selectConnectingInfo);
 
     const handleClick = (e: React.MouseEvent) => {
@@ -54,10 +54,10 @@ export default function FunctionContainer({functionData, functionId, onClick, on
 
     const data = functionData!;
     const isSelected = selectedFunctionId === functionId;
-    const isRunning = projectState === 'running';
+    const isRunning = namespaceState === 'running';
 
     const canBeConnectedCheck = () => {
-        if (!functionId || projectState !== 'connecting' || !connectingInfo) {
+        if (!functionId || namespaceState !== 'connecting' || !connectingInfo) {
             return true;
         }
 
@@ -91,7 +91,7 @@ export default function FunctionContainer({functionData, functionId, onClick, on
     };
 
     const isSourceNode = functionId === connectingInfo?.sourceFunctionId;
-    const shouldDim = projectState === 'connecting' && !isSourceNode && !canBeConnectedCheck();
+    const shouldDim = namespaceState === 'connecting' && !isSourceNode && !canBeConnectedCheck();
 
     const getBorderStyle = () => {
         if (isSelected) {

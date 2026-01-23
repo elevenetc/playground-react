@@ -1,8 +1,8 @@
-import {ConnectionType, ProjectState} from "@/components/cloudFunctionsAntd/FunctionRunnerContext";
+import {ConnectionType, NamespaceState} from "@/components/cloudFunctionsAntd/FunctionRunnerContext";
 
 export interface UiState {
     selectedFunctionId: string | null;
-    projectState: ProjectState;
+    namespaceState: NamespaceState;
     selectedNamespaceId: string | null;
     connectingInfo: {
         sourceFunctionId: string;

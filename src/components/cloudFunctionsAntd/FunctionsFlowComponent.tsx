@@ -4,11 +4,12 @@ import {useCallback} from 'react';
 import {Connection, Edge, Node, NodeChange, OnConnectStartParams, ReactFlow} from 'reactflow';
 import 'reactflow/dist/style.css';
 import FunctionNode, {FunctionNodeData} from './FunctionNode';
-import {ConnectionType, ProjectState} from './FunctionRunnerContext';
+import {ConnectionType, NamespaceState} from './FunctionRunnerContext';
 import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles, defaultEdgeOptions, edgeStyle} from './connectionStyles';
 import {useAppDispatch, useAppSelector} from './state/hooks';
-import {selectAllFunctions, selectNamespaceIdByFunctionId, selectProjectState} from './state/selectors';
+import {Function} from './Function';
+import {selectNamespaceIdByFunctionId, selectNamespaceState, selectSelectedNamespaceFunctions} from './state/selectors';
 import {canBeConnected} from './canBeConnected';
 import {connectionAdded} from './namespaces/namespacesSlice';
 import {store} from './state/store';
@@ -21,7 +22,7 @@ type FunctionsFlowComponentProps = {
     nodes: Node<FunctionNodeData>[];
     edges: Edge[];
     onNodesChange: (changes: NodeChange[]) => void;
-    setState: (state: ProjectState) => void;
+    setState: (state: NamespaceState) => void;
     setConnectingInfo: (info: {
         sourceFunctionId: string;
         sourceHandleId: string;
@@ -39,8 +40,8 @@ export default function FunctionsFlowComponent({
                                                    onPaneClick
                                                }: FunctionsFlowComponentProps) {
     const dispatch = useAppDispatch();
-    const functions = useAppSelector(selectAllFunctions);
-    const projectState = useAppSelector(selectProjectState);
+    const functions: Record<string, Function> = useAppSelector(selectSelectedNamespaceFunctions);
+    const namespaceState = useAppSelector(selectNamespaceState);
 
     const onConnect = useCallback(
         (connection: Connection) => {
@@ -103,7 +104,7 @@ export default function FunctionsFlowComponent({
 
     return (
         <div style={{width: '100%', height: '100%'}}
-             className={projectState === 'connecting' ? 'connecting-mode' : ''}>
+             className={namespaceState === 'connecting' ? 'connecting-mode' : ''}>
             <style>{`
                 .react-flow__edge.selected .react-flow__edge-path {
                     stroke: ${ConnectionStyles.selected.color} !important;

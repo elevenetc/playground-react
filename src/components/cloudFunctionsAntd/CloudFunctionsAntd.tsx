@@ -8,7 +8,6 @@ import NamespacesPanel from './NamespacesPanel';
 import DetailsPanel from './DetailsPanel';
 import MenuPanel from './MenuPanel';
 import {FunctionNodeData} from './FunctionNode';
-import {Function} from './Function';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
 import {api} from './api/FakeCloudKotlinFunctionsApi';
 import {useAppDispatch, useAppSelector} from './state/hooks';
@@ -16,11 +15,11 @@ import {
     selectConnectingInfo,
     selectEdges,
     selectFunctionsArray,
-    selectProjectState,
+    selectNamespaceState,
     selectSelectedFunctionId,
     selectSelectedNamespaceId
 } from './state/selectors';
-import {connectingInfoSet, functionSelected, projectStateChanged} from './state/uiSlice';
+import {connectingInfoSet, functionSelected, namespaceStateChanged} from './state/uiSlice';
 import {subscribeToFunctionEvents} from './state/subscribeToFunctionEvents';
 import {store} from "@/components/cloudFunctionsAntd/state/store";
 import {namespacesUpserted} from './namespaces/namespacesSlice';
@@ -32,7 +31,7 @@ function CloudFunctionsAntdInner() {
     const edges = useAppSelector(selectEdges);
     const selectedFunctionId = useAppSelector(selectSelectedFunctionId);
     const selectedNamespaceId = useAppSelector(selectSelectedNamespaceId);
-    const projectState = useAppSelector(selectProjectState);
+    const namespaceState = useAppSelector(selectNamespaceState);
     const connectingInfo = useAppSelector(selectConnectingInfo);
 
     const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>([]);
@@ -42,92 +41,46 @@ function CloudFunctionsAntdInner() {
         []
     );
 
-    // Load initial data and setup API event listener
+    // Load initial data from API (runs once on mount)
     useEffect(() => {
         const namespaceDtos = api.getNamespaces();
         if (namespaceDtos.length > 0) {
             const namespaces = namespaceDtos.map(dtoToNamespace);
             dispatch(namespacesUpserted(namespaces));
-
-            // Create initial nodes from all functions in all namespaces
-            const initialNodes: Node<FunctionNodeData>[] = [];
-            let nodeIndex = 0;
-            namespaces.forEach(namespace => {
-                namespace.functions.forEach(func => {
-                    initialNodes.push({
-                        id: func.id,
-                        type: 'functionNode',
-                        data: {functionData: func},
-                        position: {x: 50 + nodeIndex * 350, y: 250},
-                    });
-                    nodeIndex++;
-                });
-            });
-
-            setNodes(initialNodes);
         }
+    }, [dispatch]);
 
+    // Subscribe to function events when namespace changes
+    useEffect(() => {
         if (selectedNamespaceId) {
             subscribeToFunctionEvents(api, dispatch, store.getState, selectedNamespaceId);
         }
     }, [dispatch, selectedNamespaceId]);
 
-    // Sync nodes with Redux state and update project state
+    // Rebuild nodes when namespace changes to show only selected namespace functions
     useEffect(() => {
-        setNodes((prevNodes) => {
-            return prevNodes.map((node) => {
-                const func = functions.find(f => f.id === node.id);
-                if (func) {
-                    return {
-                        ...node,
-                        data: {
-                            ...node.data,
-                            functionData: func,
-                        },
-                    };
-                }
-                return node;
-            });
-        });
+        const newNodes: Node<FunctionNodeData>[] = functions.map((func, index) => ({
+            id: func.id,
+            type: 'functionNode',
+            data: {functionData: func},
+            position: {x: 100 + index * 350, y: 250},
+        }));
+        setNodes(newNodes);
+    }, [selectedNamespaceId, functions]);
 
-        // Update project state based on running functions (but don't override 'connecting' state)
-        if (projectState !== 'connecting') {
+    // Update namespace state based on running functions
+    useEffect(() => {
+        if (namespaceState !== 'connecting') {
             const hasRunningFunction = functions.some(f => f.state === 'running');
             const newState = hasRunningFunction ? 'running' : 'idle';
-            if (projectState !== newState) {
-                dispatch(projectStateChanged(newState));
+            if (namespaceState !== newState) {
+                dispatch(namespaceStateChanged(newState));
             }
         }
-    }, [functions, dispatch, projectState]);
-
-    // Add/remove nodes when functions are created/deleted
-    useEffect(() => {
-        setNodes((prevNodes) => {
-            const existingNodeIds = new Set(prevNodes.map(n => n.id));
-            const functionIds = new Set(functions.map(f => f.id));
-
-            // Add new nodes
-            const newFunctions = functions.filter(f => !existingNodeIds.has(f.id));
-            const newNodes = newFunctions.map((func, index) => ({
-                id: func.id,
-                type: 'functionNode' as const,
-                data: {functionData: func},
-                position: {x: 100 + (prevNodes.length + index) * 350, y: 250},
-            }));
-
-            // Remove deleted nodes
-            const remainingNodes = prevNodes.filter(node => functionIds.has(node.id));
-
-            return [...remainingNodes, ...newNodes];
-        });
-    }, [functions]);
+    }, [functions, dispatch, namespaceState]);
 
     const handleRunFunction = (functionId: string) => {
         api.runFunction(functionId);
-    };
-
-    const handleSelectFunction = (functionData: Function) => {
-        dispatch(functionSelected(functionData.id));
     };
 
     const handleCreateFunction = (sourceCode: string) => {
@@ -142,8 +95,8 @@ function CloudFunctionsAntdInner() {
         dispatch(functionSelected(null));
     };
 
-    const handleSetState = (newState: typeof projectState) => {
-        dispatch(projectStateChanged(newState));
+    const handleSetState = (newState: typeof namespaceState) => {
+        dispatch(namespaceStateChanged(newState));
     };
 
     const handleSetConnectingInfo = (info: typeof connectingInfo) => {

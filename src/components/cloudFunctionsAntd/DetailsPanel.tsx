@@ -1,134 +1,57 @@
 "use client";
 
-import {useState} from 'react';
-import {Button} from 'antd';
-import CreateFunctionModal from './CreateFunctionModal';
+import {Tabs} from 'antd';
 import {Function} from './Function';
+import {useAppSelector} from './state/hooks';
+import {selectSelectedNamespaceId} from './state/selectors';
+import {namespacesSelectors} from './namespaces/namespacesSlice';
+import NamespaceDetailsView from './NamespaceDetailsView';
+import FunctionDetailsView from './FunctionDetailsView';
 
-type RightPanelProps = {
+type DetailsPanelProps = {
     selectedFunction: Function | null;
     onCreateFunction: (sourceCode: string) => void;
     onRunFunction: (functionId: string) => void;
 };
 
-export default function DetailsPanel({selectedFunction, onCreateFunction, onRunFunction}: RightPanelProps) { //TODO: rename RightPanel to DetailsPanel
-    const [open, setOpen] = useState(false);
+export default function DetailsPanel({selectedFunction, onCreateFunction, onRunFunction}: DetailsPanelProps) {
+    const selectedNamespaceId = useAppSelector(selectSelectedNamespaceId);
+    const namespaces = useAppSelector(namespacesSelectors.selectAll);
+    const selectedNamespace = selectedNamespaceId
+        ? namespaces.find(ns => ns.id === selectedNamespaceId) || null
+        : null;
 
-    const handleCreate = (sourceCode: string) => {
-        onCreateFunction(sourceCode);
-        setOpen(false);
-    };
-
-    if (!selectedFunction) {
-        return (
-            <div className="h-full bg-gray-800/90 backdrop-blur-sm rounded-lg flex items-center justify-center p-4">
-                <div className="flex flex-col text-center text-white">
-                    <Button
-                        type="link"
-                        onClick={() => setOpen(true)}
-                        style={{
-                            padding: 0,
-                            height: 'auto',
-                            textDecoration: 'underline',
-                            color: 'white'
-                        }}
-                    >Create function</Button>
-                    <Button
-                        type="link"
-                        onClick={() => setOpen(true)}
-                        style={{
-                            padding: 0,
-                            height: 'auto',
-                            textDecoration: 'underline',
-                            color: 'white'
-                        }}
-                    >Create namespace</Button>
-                </div>
-
-                <CreateFunctionModal
-                    open={open}
-                    onClose={() => setOpen(false)}
-                    onCreate={handleCreate}
+    const items = [
+        {
+            key: 'namespace',
+            label: 'Namespace',
+            children: (
+                <NamespaceDetailsView
+                    selectedNamespace={selectedNamespace}
+                    onCreateFunction={onCreateFunction}
                 />
-            </div>
-        );
-    }
-
-    const params = Array.from(selectedFunction.arguments.entries());
+            ),
+        },
+        {
+            key: 'function',
+            label: 'Function',
+            children: (
+                <FunctionDetailsView
+                    selectedFunction={selectedFunction}
+                    onCreateFunction={onCreateFunction}
+                    onRunFunction={onRunFunction}
+                />
+            ),
+        },
+    ];
 
     return (
-        <div className="h-full bg-gray-800/90 backdrop-blur-sm rounded-lg p-4 overflow-auto">
-            <div className="text-white space-y-4">
-                <div>
-                    <h3 className="text-lg font-semibold mb-2">Function details</h3>
-                    <div className="flex gap-2">
-                        <Button
-                            type="primary"
-                            style={{flex: '1 1 0'}}
-                            onClick={() => onRunFunction(selectedFunction.id)}
-                        >
-                            Run
-                        </Button>
-                        <Button style={{flex: '1 1 0'}}>
-                            Edit
-                        </Button>
-                        <Button danger style={{flex: '1 1 0'}}>
-                            Delete
-                        </Button>
-                    </div>
-                </div>
-
-                <div>
-                    <div className="text-sm text-gray-400">Name</div>
-                    <div className="font-mono">{selectedFunction.name}</div>
-                </div>
-
-                <div>
-                    <div className="text-sm text-gray-400">Parameters</div>
-                    {params.length === 0 ? (
-                        <div className="text-gray-500 italic">No parameters</div>
-                    ) : (
-                        <div className="space-y-1">
-                            {params.map(([name, type]) => (
-                                <div key={name} className="font-mono text-sm">
-                                    {name}: <span className="text-blue-400">{type}</span>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                <div>
-                    <div className="text-sm text-gray-400">Return Type</div>
-                    <div className="font-mono text-blue-400">{selectedFunction.returnType}</div>
-                </div>
-
-                <div>
-                    <div className="text-sm text-gray-400">State</div>
-                    <div className="font-mono">
-                        <span className={
-                            selectedFunction.state === 'idle' ? 'text-green-400' :
-                                selectedFunction.state === 'running' ? 'text-yellow-400' :
-                                    selectedFunction.state === 'building' ? 'text-blue-400' :
-                                        'text-red-400'
-                        }>
-                            {selectedFunction.state}
-                        </span>
-                    </div>
-                </div>
-
-                <div>
-                    <div className="text-sm text-gray-400 mb-2">Source Code</div>
-                    <pre className="bg-gray-900 p-3 rounded text-sm overflow-x-auto">
-                        <code>{selectedFunction.sourceCode}</code>
-                    </pre>
-                </div>
-            </div>
-
-            <CreateFunctionModal
-                open={open}
-                onClose={() => setOpen(false)}
-                onCreate={handleCreate}
+        <div className="h-full bg-gray-800/90 backdrop-blur-sm rounded-lg overflow-auto">
+            <Tabs
+                defaultActiveKey="namespace"
+                items={items}
+                className="h-full"
+                style={{padding: '0 16px'}}
             />
         </div>
     );
