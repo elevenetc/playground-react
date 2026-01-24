@@ -50,7 +50,6 @@ export default function FunctionContainer({functionData, functionId, onClick, on
 
     const data = functionData!;
     const isSelected = selectedFunctionId === functionId;
-    const isRunning = namespaceState === 'running';
 
     const canBeConnectedCheck = () => {
         if (!functionId || namespaceState !== 'connecting' || !connectingInfo) {
@@ -93,11 +92,6 @@ export default function FunctionContainer({functionData, functionId, onClick, on
                 border: '1px solid #FF0000',
             };
         }
-        if (isRunning) {
-            return {
-                border: '1px solid #00FF00',
-            };
-        }
         return {
             border: 'none'
         };
@@ -131,7 +125,7 @@ export default function FunctionContainer({functionData, functionId, onClick, on
                 size="small"
                 type="text"
                 style={{flex: "auto", height: "2rem", borderRadius: '0 0 0.375rem 0.375rem'}}
-                disabled={data.state !== 'idle' || isRunning}
+                disabled={data.state !== 'idle'}
                 onClick={handleRunClick}>
                 {data.state === 'idle' && 'Run'}
                 {data.state === 'running' && 'Running...'}

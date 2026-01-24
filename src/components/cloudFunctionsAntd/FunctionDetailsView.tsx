@@ -2,7 +2,6 @@ import {useState} from 'react';
 import {Button} from 'antd';
 import CreateFunctionModal from './CreateFunctionModal';
 import {Function} from './Function';
-import {useStore} from './state/store';
 
 type FunctionDetailsViewProps = {
     selectedFunction: Function | null;
@@ -16,8 +15,6 @@ export default function FunctionDetailsView({
                                                 onRunFunction
                                             }: FunctionDetailsViewProps) {
     const [open, setOpen] = useState(false);
-    const {namespaceState} = useStore();
-    const isRunning = namespaceState === 'running';
 
     const handleCreate = (sourceCode: string) => {
         onCreateFunction(sourceCode);
@@ -62,19 +59,19 @@ export default function FunctionDetailsView({
                         <Button
                             type="primary"
                             style={{flex: '1 1 0'}}
-                            disabled={selectedFunction.state !== 'idle' || isRunning}
+                            disabled={selectedFunction.state !== 'idle'}
                             onClick={() => onRunFunction(selectedFunction.id)}
                         >
                             Run
                         </Button>
                         <Button
-                            disabled={selectedFunction.state !== 'idle' || isRunning}
+                            disabled={selectedFunction.state !== 'idle'}
                             style={{flex: '1 1 0'}}
                         >
                             Edit
                         </Button>
                         <Button danger
-                                disabled={selectedFunction.state !== 'idle' || isRunning}
+                                disabled={selectedFunction.state !== 'idle'}
                                 style={{flex: '1 1 0'}}
                         >
                             Delete

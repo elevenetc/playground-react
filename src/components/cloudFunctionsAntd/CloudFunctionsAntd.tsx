@@ -17,7 +17,6 @@ export default function CloudFunctionsAntd() {
     const {
         selectedFunctionId,
         selectedNamespaceId,
-        namespaceState,
         selectFunction,
         setNamespaceState,
         setConnectingInfo,
@@ -63,17 +62,6 @@ export default function CloudFunctionsAntd() {
         }));
         setNodes(newNodes);
     }, [selectedNamespaceId, functions]);
-
-    // Update namespace state based on running functions
-    useEffect(() => {
-        if (namespaceState !== 'connecting') {
-            const hasRunningFunction = functions.some(f => f.state === 'running');
-            const newState = hasRunningFunction ? 'running' : 'idle';
-            if (namespaceState !== newState) {
-                setNamespaceState(newState);
-            }
-        }
-    }, [functions, namespaceState, setNamespaceState]);
 
     const handleRunFunction = (functionId: string) => {
         runFunction(functionId);
