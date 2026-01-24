@@ -164,11 +164,11 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const events1: FunctionDto[] = [];
             const events2: FunctionDto[] = [];
 
-            api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
+            api.subscribeToFunctionEvents((eventId, eventType, functionDto) => {
                 events1.push(functionDto);
             });
 
-            api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
+            api.subscribeToFunctionEvents((eventId, eventType, functionDto) => {
                 events2.push(functionDto);
             });
 

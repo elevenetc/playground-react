@@ -1,7 +1,6 @@
 import type {Metadata} from "next";
 import {Geist, Geist_Mono} from "next/font/google";
 import "./globals.css";
-import CloudFunctions from "@/components/cloudFunctions/CloudFunctions";
 import CloudFunctionsAntd from "@/components/cloudFunctionsAntd/CloudFunctionsAntd";
 
 const geistSans = Geist({

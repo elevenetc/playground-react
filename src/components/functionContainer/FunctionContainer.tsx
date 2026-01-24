@@ -19,8 +19,8 @@ const getDebugColor = (key: keyof typeof cssValues) =>
 type FunctionContainerProps = {
     functionData?: Function;
     functionId?: string;
-    onClick?: () => void;
-    onRunFunction?: (functionId: string) => void;
+    onClick: () => void;
+    onRunFunction: (functionId: string) => void;
 };
 
 export default function FunctionContainer({functionData, functionId, onClick, onRunFunction}: FunctionContainerProps) {
