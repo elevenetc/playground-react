@@ -1,7 +1,7 @@
 "use client";
 
-import {useCallback, useEffect, useState} from 'react';
-import {applyNodeChanges, Node, NodeChange} from 'reactflow';
+import {useCallback, useEffect, useMemo, useState} from 'react';
+import {applyEdgeChanges, applyNodeChanges, Edge, EdgeChange, Node, NodeChange} from 'reactflow';
 import {ConfigProvider, theme} from 'antd';
 import NamespacesPanel from './NamespacesPanel';
 import DetailsPanel from './DetailsPanel';
@@ -22,18 +22,44 @@ export default function CloudFunctionsAntd() {
         setConnectingInfo,
         upsertNamespaces,
         getSelectedNamespaceFunctionsArray,
+        getSelectedNamespaceConnections,
         getEdges,
-        runFunction
+        runFunction,
+        removeConnection
     } = useStore();
 
     const functions = getSelectedNamespaceFunctionsArray();
-    const edges = getEdges();
+    const connections = getSelectedNamespaceConnections();
 
     const [nodes, setNodes] = useState<Node<FunctionNodeData>[]>([]);
+    const [edges, setEdges] = useState<Edge[]>([]);
+
+    // Memoize store edges to avoid infinite loops
+    const storeEdges = useMemo(() => getEdges(), [connections]);
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
         []
+    );
+
+    const onEdgesChange = useCallback(
+        (changes: EdgeChange[]) => {
+            // Handle edge removals - sync to store
+            changes.forEach(change => {
+                if (change.type === 'remove' && selectedNamespaceId) {
+                    // Parse edge ID: e::{outFunctionId}::{targetFunctionId}::{targetArgIndex}
+                    const parts = change.id.split('::');
+                    if (parts.length === 4) {
+                        const outFunctionId = parts[1];
+                        const targetFunctionId = parts[2];
+                        const targetArgIndex = parseInt(parts[3], 10);
+                        removeConnection(selectedNamespaceId, outFunctionId, targetFunctionId, targetArgIndex);
+                    }
+                }
+            });
+            setEdges((eds) => applyEdgeChanges(changes, eds));
+        },
+        [selectedNamespaceId, removeConnection]
     );
 
     // Load initial data from API
@@ -62,6 +88,11 @@ export default function CloudFunctionsAntd() {
         }));
         setNodes(newNodes);
     }, [selectedNamespaceId, functions]);
+
+    // Sync edges from store when connections change
+    useEffect(() => {
+        setEdges(storeEdges);
+    }, [storeEdges]);
 
     const handleRunFunction = (functionId: string) => {
         runFunction(functionId);
@@ -94,6 +125,7 @@ export default function CloudFunctionsAntd() {
                         nodes={nodes}
                         edges={edges}
                         onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
                         setState={setNamespaceState}
                         setConnectingInfo={setConnectingInfo}
                         onPaneClick={handlePaneClick}

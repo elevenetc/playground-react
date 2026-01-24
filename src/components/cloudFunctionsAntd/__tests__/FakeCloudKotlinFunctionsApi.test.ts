@@ -135,7 +135,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
         });
     });
 
-    describe('connectionFunctions', () => {
+    describe('addConnection', () => {
         it('should connect two functions', () => {
             const sourceCode1 = 'fun getNumber(): Int { return 42 }';
             const sourceCode2 = 'fun processNumber(x: Int): String { return x.toString() }';
@@ -147,7 +147,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const func1Id = namespaces[0].functions[0].id;
             const func2Id = namespaces[0].functions[1].id;
 
-            api.connectionFunctions(func1Id, func2Id);
+            api.addConnection(func1Id, func2Id, 0);
 
             const updatedNamespaces = api.getNamespaces();
             expect(updatedNamespaces[0].connections).toHaveLength(1);

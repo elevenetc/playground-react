@@ -9,6 +9,10 @@ import {CallConnectionUtils} from '../callConnectionUtils';
 import {api} from '../api/FakeCloudKotlinFunctionsApi';
 import {dtoToNamespace} from '../dto/dtoToNamespace';
 
+// Stable empty arrays to avoid creating new references
+const EMPTY_FUNCTIONS: Function[] = [];
+const EMPTY_CONNECTIONS: FunctionConnection[] = [];
+
 type ConnectingInfo = {
     sourceFunctionId: string;
     sourceHandleId: string;
@@ -143,36 +147,42 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
     },
 
     // Connection actions
-    addConnection: (namespaceId, outFunctionId, targetFunctionId, targetArgIndex) => set((state) => ({
-        namespaces: state.namespaces.map(ns => {
-            if (ns.id !== namespaceId) return ns;
-            const exists = ns.connections.some(
-                c => c.outFunctionId === outFunctionId
-                    && c.targetFunctionId === targetFunctionId
-                    && c.targetArgIndex === targetArgIndex
-            );
-            if (exists) return ns;
-            return {
-                ...ns,
-                connections: [...ns.connections, new FunctionConnection(outFunctionId, targetFunctionId, targetArgIndex)]
-            };
-        })
-    })),
-
-    removeConnection: (namespaceId, outFunctionId, targetFunctionId, targetArgIndex) => set((state) => ({
-        namespaces: state.namespaces.map(ns =>
-            ns.id === namespaceId
-                ? {
+    addConnection: (namespaceId, outFunctionId, targetFunctionId, targetArgIndex) => {
+        set((state) => ({
+            namespaces: state.namespaces.map(ns => {
+                if (ns.id !== namespaceId) return ns;
+                const exists = ns.connections.some(
+                    c => c.outFunctionId === outFunctionId
+                        && c.targetFunctionId === targetFunctionId
+                        && c.targetArgIndex === targetArgIndex
+                );
+                if (exists) return ns;
+                return {
                     ...ns,
-                    connections: ns.connections.filter(
-                        c => !(c.outFunctionId === outFunctionId
-                            && c.targetFunctionId === targetFunctionId
-                            && c.targetArgIndex === targetArgIndex)
-                    )
-                }
-                : ns
-        )
-    })),
+                    connections: [...ns.connections, new FunctionConnection(outFunctionId, targetFunctionId, targetArgIndex)]
+                };
+            })
+        }));
+        api.addConnection(outFunctionId, targetFunctionId, targetArgIndex);
+    },
+
+    removeConnection: (namespaceId, outFunctionId, targetFunctionId, targetArgIndex) => {
+        set((state) => ({
+            namespaces: state.namespaces.map(ns =>
+                ns.id === namespaceId
+                    ? {
+                        ...ns,
+                        connections: ns.connections.filter(
+                            c => !(c.outFunctionId === outFunctionId
+                                && c.targetFunctionId === targetFunctionId
+                                && c.targetArgIndex === targetArgIndex)
+                        )
+                    }
+                    : ns
+            )
+        }));
+        api.removeConnection(outFunctionId, targetFunctionId, targetArgIndex);
+    },
 
     // Derived getters
     getSelectedNamespace: () => {
@@ -190,18 +200,18 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
 
     getSelectedNamespaceFunctionsArray: () => {
         const namespace = get().getSelectedNamespace();
-        return namespace?.functions || [];
+        return namespace?.functions ?? EMPTY_FUNCTIONS;
     },
 
     getSelectedNamespaceConnections: () => {
         const namespace = get().getSelectedNamespace();
-        return namespace?.connections || [];
+        return namespace?.connections ?? EMPTY_CONNECTIONS;
     },
 
     getEdges: () => {
         const connections = get().getSelectedNamespaceConnections();
         return connections.map((conn) => ({
-            id: `e-${conn.outFunctionId}-${conn.targetFunctionId}-${conn.targetArgIndex}`,
+            id: `e::${conn.outFunctionId}::${conn.targetFunctionId}::${conn.targetArgIndex}`,
             source: conn.outFunctionId,
             target: conn.targetFunctionId,
             sourceHandle: CallConnectionUtils.createOutputId(),

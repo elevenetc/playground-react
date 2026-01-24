@@ -1,7 +1,7 @@
 "use client";
 
 import {useCallback} from 'react';
-import {Connection, Edge, Node, NodeChange, OnConnectStartParams, ReactFlow} from 'reactflow';
+import {Connection, Edge, EdgeChange, Node, NodeChange, OnConnectStartParams, ReactFlow} from 'reactflow';
 import 'reactflow/dist/style.css';
 import FunctionNode, {FunctionNodeData} from './FunctionNode';
 import {NamespaceState} from './state/NamespaceState';
@@ -19,6 +19,7 @@ type FunctionsFlowComponentProps = {
     nodes: Node<FunctionNodeData>[];
     edges: Edge[];
     onNodesChange: (changes: NodeChange[]) => void;
+    onEdgesChange: (changes: EdgeChange[]) => void;
     setState: (state: NamespaceState) => void;
     setConnectingInfo: (info: {
         sourceFunctionId: string;
@@ -32,6 +33,7 @@ export default function FunctionsFlowComponent({
                                                    nodes,
                                                    edges,
                                                    onNodesChange,
+                                                   onEdgesChange,
                                                    setState,
                                                    setConnectingInfo,
                                                    onPaneClick
@@ -116,6 +118,7 @@ export default function FunctionsFlowComponent({
                 defaultEdgeOptions={defaultEdgeOptions}
                 connectionLineStyle={edgeStyle}
                 onNodesChange={onNodesChange}
+                onEdgesChange={onEdgesChange}
                 onConnect={onConnect}
                 onConnectStart={onConnectStart}
                 onConnectEnd={onConnectEnd}

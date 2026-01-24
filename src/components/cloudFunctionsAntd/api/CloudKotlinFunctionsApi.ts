@@ -11,7 +11,9 @@ export interface CloudKotlinFunctionsApi {
 
     deleteFunction(functionId: string): void
 
-    connectionFunctions(outputFunctionId: string, inputFunctionArgumentId: string): void
+    addConnection(outFunctionId: string, targetFunctionId: string, targetArgIndex: number): void
+
+    removeConnection(outFunctionId: string, targetFunctionId: string, targetArgIndex: number): void
 
     subscribeToFunctionEvents(
         callback: (eventId: string, eventType: FunctionEventType, functionDto: FunctionDto, error: ErrorDto | null) => void

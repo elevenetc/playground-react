@@ -123,11 +123,27 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         });
     }
 
-    connectionFunctions(outputFunctionId: string, inputFunctionArgumentId: string): void {
-        if (!this.functions.has(outputFunctionId) || !this.functions.has(inputFunctionArgumentId)) {
+    addConnection(outFunctionId: string, targetFunctionId: string, targetArgIndex: number): void {
+        if (!this.functions.has(outFunctionId) || !this.functions.has(targetFunctionId)) {
             throw new Error('Both source and target functions must exist');
         }
-        this.connections.push(new FunctionConnection(outputFunctionId, inputFunctionArgumentId, 0));
+        const exists = this.connections.some(
+            c => c.outFunctionId === outFunctionId
+                && c.targetFunctionId === targetFunctionId
+                && c.targetArgIndex === targetArgIndex
+        );
+        if (!exists) {
+            this.connections.push(new FunctionConnection(outFunctionId, targetFunctionId, targetArgIndex));
+            this.saveNamespace();
+        }
+    }
+
+    removeConnection(outFunctionId: string, targetFunctionId: string, targetArgIndex: number): void {
+        this.connections = this.connections.filter(
+            c => !(c.outFunctionId === outFunctionId
+                && c.targetFunctionId === targetFunctionId
+                && c.targetArgIndex === targetArgIndex)
+        );
         this.saveNamespace();
     }
 
@@ -153,8 +169,8 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         const allNamespaces = this.getNamespaces();
         if (allNamespaces.length > 0 && allNamespaces[0].functions.length >= 3) {
             const functions = allNamespaces[0].functions;
-            this.connectionFunctions(functions[0].id, functions[1].id);
-            this.connectionFunctions(functions[1].id, functions[2].id);
+            this.addConnection(functions[0].id, functions[1].id, 0);
+            this.addConnection(functions[1].id, functions[2].id, 0);
         }
 
         this.localDb.markAsInitialized();
