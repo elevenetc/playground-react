@@ -9,6 +9,7 @@ import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles} from './connectionStyles';
 import {useStore} from './state/store';
 import {canBeConnected} from './canBeConnected';
+import {api} from './api/FakeCloudKotlinFunctionsApi';
 
 export type FunctionNodeData = {
     functionData: Function;
@@ -21,6 +22,10 @@ function FunctionNode({data}: NodeProps<FunctionNodeData>) {
     const argumentCount = data.functionData.arguments.size;
     const hasReturnValue = data.functionData.returnType !== 'Unit';
     const isSourceNode = data.functionData.id === connectingInfo?.sourceFunctionId;
+
+    const handleRunFunction = (functionId: string) => {
+        api.runFunction(functionId);
+    };
 
     const getArgumentHandlePosition = (index: number) => {
         return SIGNATURE_FIRST_LINE_HEIGHT + (PARAMETER_LINE_HEIGHT * index) + (PARAMETER_LINE_HEIGHT / 2);
@@ -135,6 +140,9 @@ function FunctionNode({data}: NodeProps<FunctionNodeData>) {
             <FunctionContainer
                 functionData={data.functionData}
                 functionId={data.functionData.id}
+                onClick={() => {
+                }}
+                onRunFunction={handleRunFunction}
             />
 
             {hasReturnValue && (
