@@ -35,7 +35,8 @@ export default function CloudFunctionsAntd() {
     const [edges, setEdges] = useState<Edge[]>([]);
 
     // Memoize store edges to avoid infinite loops
-    const storeEdges = useMemo(() => getEdges(), [connections]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- connections triggers recomputation
+    const storeEdges = useMemo(() => getEdges(), [connections, getEdges]);
 
     const onNodesChange = useCallback(
         (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),

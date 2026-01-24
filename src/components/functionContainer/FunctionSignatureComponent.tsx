@@ -23,7 +23,7 @@ export default function FunctionSignatureComponent({
     const functions = getSelectedNamespaceFunctions();
     const paramEntries = Object.entries(parameters);
 
-    const canParameterConnect = (parameterIndex: number, _parameterType: string): boolean => {
+    const canParameterConnect = (parameterIndex: number): boolean => {
         if (!functionId || namespaceState !== 'connecting' || !connectingInfo) {
             return true;
         }
@@ -78,7 +78,7 @@ export default function FunctionSignatureComponent({
                 <>
                     {'\n'}
                     {paramEntries.map(([name, type], index) => {
-                        const canConnect = canParameterConnect(index, type);
+                        const canConnect = canParameterConnect(index);
                         const shouldHighlight = isConnecting && !isSourceNode && canConnect;
                         const shouldDim = isConnecting && !isSourceNode && !canConnect;
 

@@ -1,6 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { useTree } from "./FileTreeContext";
+import React, {useEffect, useState} from "react";
+import {useTree} from "./FileTreeContext";
 
 const FILE_SIZE_LIMIT = 10_000_000; // 10MB threshold
 
@@ -88,7 +88,7 @@ export default function FileContent() {
     <div className="h-full p-4 overflow-hidden">
       {status === "idle" && <div className="text-base-content/70">No file selected.</div>}
       {status === "too_big" && <div className="text-warning">File is too big.</div>}
-      {status === "binary" && <div className="text-base-content/70">Binary file. Content can't be shown.</div>}
+      {status === "binary" && <div className="text-base-content/70">Binary file. Content cannot be shown.</div>}
       {status === "loading" && <div className="text-base-content/70">Loading…</div>}
       {status === "ready" && (
         isJson ? (

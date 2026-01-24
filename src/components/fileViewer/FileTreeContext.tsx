@@ -1,5 +1,5 @@
 "use client";
-import React, { createContext, useContext, useMemo, useState } from "react";
+import React, {createContext, useContext, useMemo, useState} from "react";
 
 export type TreeNode = {
   name: string;
@@ -9,16 +9,28 @@ export type TreeNode = {
   path?: string;
 };
 
+type IntermediateNode = {
+  name: string;
+  type: "folder" | "file";
+  file?: File;
+  _children?: Map<string, IntermediateNode>;
+  _path: string;
+};
+
+type FileWithPath = File & {
+  readonly webkitRelativePath: string;
+};
+
 export function buildTreeFromFiles(fileList: FileList): { tree: TreeNode[]; rootName: string | null } {
-  const root = new Map<string, any>();
+  const root = new Map<string, IntermediateNode>();
   const files = Array.from(fileList);
 
   for (const file of files) {
-    const relative: string = (file as any).webkitRelativePath || file.name;
+    const relative: string = (file as FileWithPath).webkitRelativePath || file.name;
     const parts = relative.split("/").filter(Boolean);
     if (parts.length === 0) continue;
 
-    let current: Map<string, any> = root;
+    let current: Map<string, IntermediateNode> = root;
     let currentPath = "";
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
@@ -31,20 +43,20 @@ export function buildTreeFromFiles(fileList: FileList): { tree: TreeNode[]; root
         let node = current.get(part);
         if (!node || node.type !== "folder") {
           const folderPath = currentPath ? `${currentPath}/${part}` : part;
-          node = { name: part, type: "folder", _children: new Map<string, any>(), _path: folderPath };
+          node = {name: part, type: "folder", _children: new Map<string, IntermediateNode>(), _path: folderPath};
           current.set(part, node);
         }
-        current = node._children;
+        current = node._children!;
         currentPath = currentPath ? `${currentPath}/${part}` : part;
       }
     }
   }
 
-  function mapToArray(map: Map<string, any>): TreeNode[] {
+  function mapToArray(map: Map<string, IntermediateNode>): TreeNode[] {
     const arr: TreeNode[] = [];
     for (const [, node] of map) {
       if (node.type === "folder") {
-        arr.push({ name: node.name, type: "folder", children: mapToArray(node._children), path: node._path });
+        arr.push({name: node.name, type: "folder", children: mapToArray(node._children!), path: node._path});
       } else {
         arr.push({ name: node.name, type: "file", file: node.file, path: node._path });
       }
@@ -95,7 +107,7 @@ export function TreeProvider({ children }: { children: React.ReactNode }) {
 
   const loadFromFiles = (files: FileList) => {
     const hasDir = Array.from(files).some(
-      (f) => (f as any).webkitRelativePath && (f as any).webkitRelativePath.includes("/")
+        (f) => (f as FileWithPath).webkitRelativePath?.includes("/")
     );
     if (hasDir) {
       const res = buildTreeFromFiles(files);
