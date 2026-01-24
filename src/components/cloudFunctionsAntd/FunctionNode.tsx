@@ -9,14 +9,13 @@ import {CallConnectionUtils} from './callConnectionUtils';
 import {ConnectionStyles} from './connectionStyles';
 import {useStore} from './state/store';
 import {canBeConnected} from './canBeConnected';
-import {api} from './api/FakeCloudKotlinFunctionsApi';
 
 export type FunctionNodeData = {
     functionData: Function;
 };
 
 function FunctionNode({data}: NodeProps<FunctionNodeData>) {
-    const {namespaceState, connectingInfo, getSelectedNamespaceFunctions} = useStore();
+    const {namespaceState, connectingInfo, getSelectedNamespaceFunctions, runFunction} = useStore();
     const functions = getSelectedNamespaceFunctions();
 
     const argumentCount = data.functionData.arguments.size;
@@ -24,7 +23,7 @@ function FunctionNode({data}: NodeProps<FunctionNodeData>) {
     const isSourceNode = data.functionData.id === connectingInfo?.sourceFunctionId;
 
     const handleRunFunction = (functionId: string) => {
-        api.runFunction(functionId);
+        runFunction(functionId);
     };
 
     const getArgumentHandlePosition = (index: number) => {

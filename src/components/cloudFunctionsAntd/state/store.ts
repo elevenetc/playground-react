@@ -44,6 +44,7 @@ interface AppActions {
     addFunction: (namespaceId: string, func: Function) => void;
     deleteFunction: (namespaceId: string, functionId: string) => void;
     setFunctionState: (namespaceId: string, functionId: string, state: FunctionState) => void;
+    runFunction: (functionId: string) => void;
 
     // Connection actions
     addConnection: (namespaceId: string, outFunctionId: string, targetFunctionId: string, targetArgIndex: number) => void;
@@ -131,6 +132,14 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
                 : ns
         )
     })),
+
+    runFunction: (functionId) => {
+        const namespaceId = get().findNamespaceIdByFunctionId(functionId);
+        if (namespaceId) {
+            get().setFunctionState(namespaceId, functionId, 'running');
+        }
+        api.runFunction(functionId);
+    },
 
     // Connection actions
     addConnection: (namespaceId, outFunctionId, targetFunctionId, targetArgIndex) => set((state) => ({

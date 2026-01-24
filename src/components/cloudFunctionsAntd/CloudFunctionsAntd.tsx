@@ -23,7 +23,8 @@ export default function CloudFunctionsAntd() {
         setConnectingInfo,
         upsertNamespaces,
         getSelectedNamespaceFunctionsArray,
-        getEdges
+        getEdges,
+        runFunction
     } = useStore();
 
     const functions = getSelectedNamespaceFunctionsArray();
@@ -75,7 +76,7 @@ export default function CloudFunctionsAntd() {
     }, [functions, namespaceState, setNamespaceState]);
 
     const handleRunFunction = (functionId: string) => {
-        api.runFunction(functionId);
+        runFunction(functionId);
     };
 
     const handleCreateFunction = (sourceCode: string) => {
