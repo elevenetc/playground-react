@@ -28,7 +28,7 @@ export default function CallGroupPanel() {
     }
 
     const handleRun = () => {
-        const firstRoot = callGroup.rootIds[0];
+        const firstRoot = callGroup.rootFunctionIds[0];
         if (firstRoot) {
             runFunction(firstRoot);
         }
@@ -48,7 +48,7 @@ export default function CallGroupPanel() {
             </div>
             <div className="flex items-center gap-2">
                 <span className="text-gray-400">Roots:</span>
-                <span className="text-white">{callGroup.rootIds.length}</span>
+                <span className="text-white">{callGroup.rootFunctionIds.length}</span>
             </div>
             <div className="pt-2">
                 <Button

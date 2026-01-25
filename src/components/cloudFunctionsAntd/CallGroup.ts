@@ -2,7 +2,8 @@ import {CanRunResult} from './canRun';
 
 export type CallGroup = {
     id: string;
+    namespaceId: string;
     functionIds: Set<string>;
-    rootIds: string[];
+    rootFunctionIds: string[];
     canRun: CanRunResult;
 };

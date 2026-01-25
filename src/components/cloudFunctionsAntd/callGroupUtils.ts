@@ -68,7 +68,8 @@ function generateGroupId(functionIds: Set<string>): string {
 
 export function computeCallGroups(
     functions: Function[],
-    connections: FunctionConnection[]
+    connections: FunctionConnection[],
+    namespaceId: string = ''
 ): CallGroup[] {
     if (functions.length === 0) return [];
 
@@ -77,15 +78,16 @@ export function computeCallGroups(
     functions.forEach(f => functionsMap[f.id] = f);
 
     return components.map((functionIds) => {
-        const rootIds = findRootFunctions(functionIds, connections);
-        const checkFunctionId = rootIds[0] ?? Array.from(functionIds)[0];
+        const rootFunctionIds = findRootFunctions(functionIds, connections);
+        const checkFunctionId = rootFunctionIds[0] ?? Array.from(functionIds)[0];
         const checkFunction = functionsMap[checkFunctionId];
         const canRunResult = canRun(checkFunction, functionsMap, connections);
 
         return {
             id: generateGroupId(functionIds),
+            namespaceId,
             functionIds,
-            rootIds,
+            rootFunctionIds,
             canRun: canRunResult
         };
     });

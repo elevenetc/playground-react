@@ -11,7 +11,7 @@ import {FunctionNodeData} from './FunctionNode';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
 import {api} from './api/FakeCloudKotlinFunctionsApi';
 import {useStore} from './state/store';
-import {subscribeToFunctionEvents} from './state/subscribeToFunctionEvents';
+import {subscribeToEvents} from './state/subscribeToEvents';
 import {dtoToNamespace} from './dto/dtoToNamespace';
 
 export default function CloudFunctionsAntd() {
@@ -74,10 +74,10 @@ export default function CloudFunctionsAntd() {
         }
     }, [upsertNamespaces]);
 
-    // Subscribe to function events when namespace changes
+    // Subscribe to events when namespace changes
     useEffect(() => {
         if (selectedNamespaceId) {
-            subscribeToFunctionEvents(api, selectedNamespaceId);
+            subscribeToEvents(api, selectedNamespaceId);
         }
     }, [selectedNamespaceId]);
 

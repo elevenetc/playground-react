@@ -86,7 +86,7 @@ describe('computeCallGroups', () => {
             const result = computeCallGroups([funcA, funcB, funcC], connections);
 
             expect(result).toHaveLength(1);
-            expect(result[0].rootIds).toEqual(['A']);
+            expect(result[0].rootFunctionIds).toEqual(['A']);
         });
 
         it('should identify multiple roots when functions feed into same target', () => {
@@ -101,7 +101,7 @@ describe('computeCallGroups', () => {
             const result = computeCallGroups([funcA, funcB, funcC], connections);
 
             expect(result).toHaveLength(1);
-            expect(result[0].rootIds.sort()).toEqual(['A', 'B']);
+            expect(result[0].rootFunctionIds.sort()).toEqual(['A', 'B']);
         });
 
         it('should treat standalone function as its own root', () => {
@@ -110,7 +110,7 @@ describe('computeCallGroups', () => {
             const result = computeCallGroups([func], []);
 
             expect(result).toHaveLength(1);
-            expect(result[0].rootIds).toEqual(['A']);
+            expect(result[0].rootFunctionIds).toEqual(['A']);
         });
 
         it('should handle diamond pattern with single root', () => {
@@ -133,7 +133,7 @@ describe('computeCallGroups', () => {
             const result = computeCallGroups([funcA, funcB, funcC, funcD], connections);
 
             expect(result).toHaveLength(1);
-            expect(result[0].rootIds).toEqual(['A']);
+            expect(result[0].rootFunctionIds).toEqual(['A']);
         });
     });
 
@@ -227,7 +227,7 @@ describe('computeCallGroups', () => {
 
             expect(result).toHaveLength(1);
             expect(result[0].functionIds.size).toBe(3);
-            expect(result[0].rootIds).toEqual(['A']);
+            expect(result[0].rootFunctionIds).toEqual(['A']);
         });
 
         it('should ignore connections referencing non-existent functions', () => {

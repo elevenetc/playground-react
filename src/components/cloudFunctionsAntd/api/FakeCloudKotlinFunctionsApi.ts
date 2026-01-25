@@ -1,11 +1,20 @@
-import {CloudKotlinFunctionsApi, ErrorDto, FunctionDto, FunctionEventType, TypeDto} from './CloudKotlinFunctionsApi';
+import {
+    ApiEvent,
+    CallGroupDto,
+    CloudKotlinFunctionsApi,
+    ErrorDto,
+    EventCallback,
+    FunctionDto,
+    TypeDto
+} from './CloudKotlinFunctionsApi';
 import {LocalDb} from '../db/LocalDb';
 import {FakeFunctionRunner} from '../FakeFunctionRunner';
 import {Function} from '../Function';
 import {FunctionConnection} from '../FunctionConnection';
 import {parseKotlinFunction} from './parseKotlinFunction';
 import {dtoToFunction} from '../dto/dtoToFunction';
-import {NamespaceDto} from "@/components/cloudFunctionsAntd/dto/dto";
+import {NamespaceDto} from '../dto/dto';
+import {canRun, CanRunReason, CanRunResult} from '../canRun';
 
 export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private localDb: LocalDb;
@@ -14,7 +23,8 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private functionToNamespace: Map<string, string>;
     private connections: FunctionConnection[];
     private runner: FakeFunctionRunner;
-    private eventSubscribers: Array<(eventId: string, eventType: FunctionEventType, functionDto: FunctionDto, error: ErrorDto | null) => void>;
+    private eventSubscribers: EventCallback[];
+    private callGroups: Map<string, CallGroupDto>;
 
     constructor(initializeDemoData: boolean = true) {
         this.localDb = new LocalDb();
@@ -24,17 +34,23 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         this.connections = [];
         this.runner = new FakeFunctionRunner(this.functions, this.connections);
         this.eventSubscribers = [];
+        this.callGroups = new Map();
 
         this.loadNamespacesFromDb();
         if (initializeDemoData) {
             this.initializeDemoDataIfNeeded();
         }
         this.setupRunnerSubscription();
+        this.recomputeAllCallGroups();
     }
 
     getNamespaces(): NamespaceDto[] {
         this.syncCurrentNamespaceToStore();
         return Array.from(this.namespaces.values());
+    }
+
+    getCallGroups(namespaceId: string): CallGroupDto[] {
+        return Array.from(this.callGroups.values()).filter(g => g.namespaceId === namespaceId);
     }
 
     createNamespace(name: string): void {
@@ -51,7 +67,6 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         this.saveAllNamespaces();
     }
 
-
     runFunction(functionId: string): void {
         try {
             this.runner.run(functionId);
@@ -63,9 +78,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
                     message: error instanceof Error ? error.message : 'Unknown error'
                 };
 
-                this.eventSubscribers.forEach(callback => {
-                    callback(crypto.randomUUID(), 'state-changed', this.functionToDto(func), errorDto);
-                });
+                this.emitFunctionEvent('state-changed', this.functionToDto(func), errorDto);
             }
         }
     }
@@ -86,9 +99,8 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         namespace.updatedAt = new Date().toISOString();
         this.saveAllNamespaces();
 
-        this.eventSubscribers.forEach(callback => {
-            callback(crypto.randomUUID(), 'created', functionDto, null);
-        });
+        this.emitFunctionEvent('created', functionDto, null);
+        this.recomputeCallGroupsForNamespace(namespaceId);
     }
 
     deleteFunction(functionId: string): void {
@@ -108,7 +120,6 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         );
         this.saveNamespace();
 
-        // Emit deleted event
         const deletedDto: FunctionDto = {
             id: functionId,
             name: '',
@@ -118,9 +129,11 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
             state: 'idle'
         };
 
-        this.eventSubscribers.forEach(callback => {
-            callback(crypto.randomUUID(), 'deleted', deletedDto, null);
-        });
+        this.emitFunctionEvent('deleted', deletedDto, null);
+
+        if (namespaceId) {
+            this.recomputeCallGroupsForNamespace(namespaceId);
+        }
     }
 
     addConnection(outFunctionId: string, targetFunctionId: string, targetArgIndex: number): void {
@@ -135,22 +148,201 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         if (!exists) {
             this.connections.push(new FunctionConnection(outFunctionId, targetFunctionId, targetArgIndex));
             this.saveNamespace();
+
+            const namespaceId = this.functionToNamespace.get(outFunctionId);
+            if (namespaceId) {
+                this.recomputeCallGroupsForNamespace(namespaceId);
+            }
         }
     }
 
     removeConnection(outFunctionId: string, targetFunctionId: string, targetArgIndex: number): void {
+        const namespaceId = this.functionToNamespace.get(outFunctionId);
+
         this.connections = this.connections.filter(
             c => !(c.outFunctionId === outFunctionId
                 && c.targetFunctionId === targetFunctionId
                 && c.targetArgIndex === targetArgIndex)
         );
         this.saveNamespace();
+
+        if (namespaceId) {
+            this.recomputeCallGroupsForNamespace(namespaceId);
+        }
     }
 
-    subscribeToFunctionEvents(
-        callback: (eventId: string, eventType: FunctionEventType, functionDto: FunctionDto, error: ErrorDto | null) => void
-    ): void {
+    subscribeToEvents(callback: EventCallback): void {
         this.eventSubscribers.push(callback);
+    }
+
+    private emitFunctionEvent(eventType: 'created' | 'updated' | 'deleted' | 'state-changed', data: FunctionDto, error: ErrorDto | null): void {
+        const event: ApiEvent = {
+            kind: 'function',
+            eventId: crypto.randomUUID(),
+            eventType,
+            data,
+            error
+        };
+        this.eventSubscribers.forEach(cb => cb(event));
+    }
+
+    private emitCallGroupEvent(eventType: 'created' | 'updated' | 'deleted', data: CallGroupDto): void {
+        const event: ApiEvent = {
+            kind: 'callGroup',
+            eventId: crypto.randomUUID(),
+            eventType,
+            data
+        };
+        this.eventSubscribers.forEach(cb => cb(event));
+    }
+
+    private recomputeAllCallGroups(): void {
+        for (const namespaceId of this.namespaces.keys()) {
+            this.recomputeCallGroupsForNamespace(namespaceId, false);
+        }
+    }
+
+    private recomputeCallGroupsForNamespace(namespaceId: string, emitEvents: boolean = true): void {
+        const namespace = this.namespaces.get(namespaceId);
+        if (!namespace) return;
+
+        const functionIds = new Set(
+            Array.from(this.functions.entries())
+                .filter(([, f]) => this.functionToNamespace.get(f.id) === namespaceId)
+                .map(([id]) => id)
+        );
+
+        const relevantConnections = this.connections.filter(
+            c => functionIds.has(c.outFunctionId) && functionIds.has(c.targetFunctionId)
+        );
+
+        const oldGroupIds = new Set(
+            Array.from(this.callGroups.values())
+                .filter(g => g.namespaceId === namespaceId)
+                .map(g => g.id)
+        );
+
+        const components = this.extractConnectedComponents(Array.from(functionIds), relevantConnections);
+        const functionsRecord: Record<string, Function> = {};
+        this.functions.forEach((f, id) => {
+            if (functionIds.has(id)) functionsRecord[id] = f;
+        });
+
+        const newGroups: CallGroupDto[] = [];
+
+        for (const component of components) {
+            const rootIds = this.findRootFunctions(component, relevantConnections);
+            const checkFunctionId = rootIds[0] ?? Array.from(component)[0];
+            const checkFunction = functionsRecord[checkFunctionId];
+            const canRunResult = canRun(checkFunction, functionsRecord, relevantConnections);
+
+            const groupId = this.generateGroupId(namespaceId, component);
+            const group: CallGroupDto = {
+                id: groupId,
+                namespaceId,
+                functionIds: Array.from(component),
+                rootFunctionIds: rootIds,
+                canRun: this.canRunResultToDto(canRunResult)
+            };
+
+            newGroups.push(group);
+        }
+
+        const newGroupIds = new Set(newGroups.map(g => g.id));
+
+        // Delete removed groups
+        for (const oldId of oldGroupIds) {
+            if (!newGroupIds.has(oldId)) {
+                const oldGroup = this.callGroups.get(oldId);
+                if (oldGroup && emitEvents) {
+                    this.emitCallGroupEvent('deleted', oldGroup);
+                }
+                this.callGroups.delete(oldId);
+            }
+        }
+
+        // Create or update groups
+        for (const newGroup of newGroups) {
+            const existed = oldGroupIds.has(newGroup.id);
+            this.callGroups.set(newGroup.id, newGroup);
+
+            if (emitEvents) {
+                this.emitCallGroupEvent(existed ? 'updated' : 'created', newGroup);
+            }
+        }
+    }
+
+    private extractConnectedComponents(functionIds: string[], connections: FunctionConnection[]): Set<string>[] {
+        const parent = new Map<string, string>();
+        functionIds.forEach(id => parent.set(id, id));
+
+        const find = (id: string): string => {
+            if (parent.get(id) !== id) {
+                parent.set(id, find(parent.get(id)!));
+            }
+            return parent.get(id)!;
+        };
+
+        const union = (a: string, b: string) => {
+            const rootA = find(a);
+            const rootB = find(b);
+            if (rootA !== rootB) {
+                parent.set(rootA, rootB);
+            }
+        };
+
+        for (const conn of connections) {
+            if (parent.has(conn.outFunctionId) && parent.has(conn.targetFunctionId)) {
+                union(conn.outFunctionId, conn.targetFunctionId);
+            }
+        }
+
+        const components = new Map<string, Set<string>>();
+        for (const id of functionIds) {
+            const root = find(id);
+            if (!components.has(root)) {
+                components.set(root, new Set());
+            }
+            components.get(root)!.add(id);
+        }
+
+        return Array.from(components.values());
+    }
+
+    private findRootFunctions(functionIds: Set<string>, connections: FunctionConnection[]): string[] {
+        const hasIncoming = new Set<string>();
+        for (const conn of connections) {
+            if (functionIds.has(conn.outFunctionId) && functionIds.has(conn.targetFunctionId)) {
+                hasIncoming.add(conn.targetFunctionId);
+            }
+        }
+        return Array.from(functionIds).filter(id => !hasIncoming.has(id));
+    }
+
+    private generateGroupId(namespaceId: string, functionIds: Set<string>): string {
+        const sortedIds = Array.from(functionIds).sort().join(':');
+        return `${namespaceId}::${sortedIds}`;
+    }
+
+    private canRunResultToDto(result: CanRunResult): CallGroupDto['canRun'] {
+        if (result.can) {
+            return {can: true};
+        }
+
+        return {
+            can: false,
+            reasons: result.reasons.map((r: CanRunReason) => ({
+                type: r.type,
+                location: r.location,
+                functionId: r.functionId,
+                functionName: r.functionName,
+                ...(r.type === 'not-idle' && {state: r.state}),
+                ...(r.type === 'missing-argument' && {
+                    argumentName: r.argumentName,
+                    argumentIndex: r.argumentIndex
+                })
+            }))
+        };
     }
 
     private initializeDemoDataIfNeeded(): void {
@@ -243,10 +435,13 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
                 const functionDto = this.functionToDto(func);
 
                 this.saveNamespace();
+                this.emitFunctionEvent('state-changed', functionDto, null);
 
-                this.eventSubscribers.forEach(callback => {
-                    callback(crypto.randomUUID(), 'state-changed', functionDto, null);
-                });
+                // Recompute call groups when function state changes (affects canRun)
+                const namespaceId = this.functionToNamespace.get(event.functionId);
+                if (namespaceId) {
+                    this.recomputeCallGroupsForNamespace(namespaceId);
+                }
             }
         });
     }

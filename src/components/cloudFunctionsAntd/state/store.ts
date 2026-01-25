@@ -8,9 +8,9 @@ import {ConnectionType} from '../state/ConnectionType';
 import {CallConnectionUtils} from '../callConnectionUtils';
 import {api} from '../api/FakeCloudKotlinFunctionsApi';
 import {dtoToNamespace} from '../dto/dtoToNamespace';
+import {dtoToCallGroup} from '../dto/dtoToCallGroup';
 import {canRun, formatCanRunReasons} from '../canRun';
 import {CallGroup} from '../CallGroup';
-import {computeCallGroups} from '../callGroupUtils';
 
 // Stable empty arrays to avoid creating new references
 const EMPTY_FUNCTIONS: Function[] = [];
@@ -35,6 +35,9 @@ interface AppState {
     namespaces: Namespace[];
     loading: LoadingState;
     error: string | null;
+
+    // Call groups state
+    callGroups: Map<string, CallGroup>;
 }
 
 interface AppActions {
@@ -57,6 +60,10 @@ interface AppActions {
     // Connection actions
     addConnection: (namespaceId: string, outFunctionId: string, targetFunctionId: string, targetArgIndex: number) => void;
     removeConnection: (namespaceId: string, outFunctionId: string, targetFunctionId: string, targetArgIndex: number) => void;
+
+    // Call group actions
+    upsertCallGroup: (callGroup: CallGroup) => void;
+    deleteCallGroup: (callGroupId: string) => void;
 
     // Derived getters
     getSelectedNamespace: () => Namespace | null;
@@ -83,6 +90,9 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
     loading: 'loading',
     error: null,
 
+    // Initial call groups state
+    callGroups: new Map(),
+
     // UI actions
     selectFunction: (id) => set({selectedFunctionId: id}),
     selectNamespace: (id) => set({selectedNamespaceId: id, selectedFunctionId: null}),
@@ -95,7 +105,18 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
         try {
             const dtos = api.getNamespaces();
             const namespaces = dtos.map(dtoToNamespace);
-            set({namespaces, loading: 'loaded'});
+
+            // Load call groups for all namespaces
+            const callGroups = new Map<string, CallGroup>();
+            for (const ns of namespaces) {
+                const groupDtos = api.getCallGroups(ns.id);
+                for (const dto of groupDtos) {
+                    const group = dtoToCallGroup(dto);
+                    callGroups.set(group.id, group);
+                }
+            }
+
+            set({namespaces, callGroups, loading: 'loaded'});
         } catch (e) {
             set({loading: 'loadingError', error: e instanceof Error ? e.message : 'Failed to load'});
         }
@@ -213,6 +234,19 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
         api.removeConnection(outFunctionId, targetFunctionId, targetArgIndex);
     },
 
+    // Call group actions
+    upsertCallGroup: (callGroup) => set((state) => {
+        const newMap = new Map(state.callGroups);
+        newMap.set(callGroup.id, callGroup);
+        return {callGroups: newMap};
+    }),
+
+    deleteCallGroup: (callGroupId) => set((state) => {
+        const newMap = new Map(state.callGroups);
+        newMap.delete(callGroupId);
+        return {callGroups: newMap};
+    }),
+
     // Derived getters
     getSelectedNamespace: () => {
         const {namespaces, selectedNamespaceId} = get();
@@ -269,15 +303,17 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
     },
 
     getCallGroups: (namespaceId) => {
-        const namespace = get().namespaces.find(ns => ns.id === namespaceId);
-        if (!namespace) return [];
-        return computeCallGroups(namespace.functions, namespace.connections);
+        const {callGroups} = get();
+        return Array.from(callGroups.values()).filter(g => g.namespaceId === namespaceId);
     },
 
     getCallGroupForFunction: (functionId) => {
-        const namespaceId = get().findNamespaceIdByFunctionId(functionId);
-        if (!namespaceId) return null;
-        const groups = get().getCallGroups(namespaceId);
-        return groups.find(g => g.functionIds.has(functionId)) || null;
+        const {callGroups} = get();
+        for (const group of callGroups.values()) {
+            if (group.functionIds.has(functionId)) {
+                return group;
+            }
+        }
+        return null;
     }
 }));

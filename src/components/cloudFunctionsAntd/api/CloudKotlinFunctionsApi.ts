@@ -3,6 +3,8 @@ import {NamespaceDto} from '../dto/dto';
 export interface CloudKotlinFunctionsApi {
     getNamespaces(): NamespaceDto[]
 
+    getCallGroups(namespaceId: string): CallGroupDto[]
+
     createNamespace(name: string): void
 
     runFunction(functionId: string): void
@@ -15,12 +17,17 @@ export interface CloudKotlinFunctionsApi {
 
     removeConnection(outFunctionId: string, targetFunctionId: string, targetArgIndex: number): void
 
-    subscribeToFunctionEvents(
-        callback: (eventId: string, eventType: FunctionEventType, functionDto: FunctionDto, error: ErrorDto | null) => void
-    ): void
+    subscribeToEvents(callback: EventCallback): void
 }
 
 export type FunctionEventType = 'created' | 'updated' | 'deleted' | 'state-changed';
+export type CallGroupEventType = 'created' | 'updated' | 'deleted';
+
+export type ApiEvent =
+    | { kind: 'function'; eventId: string; eventType: FunctionEventType; data: FunctionDto; error: ErrorDto | null }
+    | { kind: 'callGroup'; eventId: string; eventType: CallGroupEventType; data: CallGroupDto };
+
+export type EventCallback = (event: ApiEvent) => void;
 
 export type ErrorDto = {
     id: string;
@@ -59,4 +66,26 @@ export type ProjectDto = {
 export type FunctionConnectionDto = {
     outFunctionId: string;
     inputArgumentId: string;
+};
+
+export type CallGroupDto = {
+    id: string;
+    namespaceId: string;
+    functionIds: string[];
+    rootFunctionIds: string[];
+    canRun: CanRunResultDto;
+};
+
+export type CanRunResultDto =
+    | { can: true }
+    | { can: false; reasons: CanRunReasonDto[] };
+
+export type CanRunReasonDto = {
+    type: 'not-idle' | 'missing-argument';
+    location: 'upstream' | 'current' | 'downstream';
+    functionId: string;
+    functionName: string;
+    state?: string;
+    argumentName?: string;
+    argumentIndex?: number;
 };

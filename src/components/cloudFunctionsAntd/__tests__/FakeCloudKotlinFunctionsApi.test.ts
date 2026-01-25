@@ -105,9 +105,10 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const functionId = namespaces[0].functions[0].id;
 
             const events: FunctionDto[] = [];
-            api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
-                expect(error).toBeNull();
-                events.push(functionDto);
+            api.subscribeToEvents((event) => {
+                if (event.kind === 'function' && event.error === null) {
+                    events.push(event.data);
+                }
             });
 
             api.runFunction(functionId);
@@ -122,10 +123,10 @@ describe('FakeCloudKotlinFunctionsApi', () => {
         it('should emit error event when function not found', () => {
             let errorReceived = false;
 
-            api.subscribeToFunctionEvents((eventId, eventType, functionDto, error) => {
-                if (error) {
+            api.subscribeToEvents((event) => {
+                if (event.kind === 'function' && event.error) {
                     errorReceived = true;
-                    expect(error.message).toContain('not found');
+                    expect(event.error.message).toContain('not found');
                 }
             });
 
@@ -164,12 +165,16 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const events1: FunctionDto[] = [];
             const events2: FunctionDto[] = [];
 
-            api.subscribeToFunctionEvents((eventId, eventType, functionDto) => {
-                events1.push(functionDto);
+            api.subscribeToEvents((event) => {
+                if (event.kind === 'function') {
+                    events1.push(event.data);
+                }
             });
 
-            api.subscribeToFunctionEvents((eventId, eventType, functionDto) => {
-                events2.push(functionDto);
+            api.subscribeToEvents((event) => {
+                if (event.kind === 'function') {
+                    events2.push(event.data);
+                }
             });
 
             const namespaces = api.getNamespaces();
@@ -181,6 +186,66 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             expect(events1.length).toBeGreaterThan(0);
             expect(events2.length).toBeGreaterThan(0);
             expect(events1.length).toBe(events2.length);
+        });
+    });
+
+    describe('call groups', () => {
+        it('should compute call groups for connected functions', () => {
+            const sourceCode1 = 'fun getNumber(): Int { return 42 }';
+            const sourceCode2 = 'fun processNumber(x: Int): String { return x.toString() }';
+
+            api.createFunction('default', sourceCode1);
+            api.createFunction('default', sourceCode2);
+
+            const namespaces = api.getNamespaces();
+            const func1Id = namespaces[0].functions[0].id;
+            const func2Id = namespaces[0].functions[1].id;
+
+            // Before connection: should have 2 separate groups
+            let groups = api.getCallGroups('default');
+            expect(groups).toHaveLength(2);
+
+            // Connect functions
+            api.addConnection(func1Id, func2Id, 0);
+
+            // After connection: should have 1 group with both functions
+            groups = api.getCallGroups('default');
+            expect(groups).toHaveLength(1);
+            expect(groups[0].functionIds).toContain(func1Id);
+            expect(groups[0].functionIds).toContain(func2Id);
+            expect(groups[0].rootFunctionIds).toEqual([func1Id]);
+        });
+
+        it('should emit call group events when connections change', () => {
+            const sourceCode1 = 'fun getNumber(): Int { return 42 }';
+            const sourceCode2 = 'fun processNumber(x: Int): String { return x.toString() }';
+
+            api.createFunction('default', sourceCode1);
+            api.createFunction('default', sourceCode2);
+
+            const namespaces = api.getNamespaces();
+            const func1Id = namespaces[0].functions[0].id;
+            const func2Id = namespaces[0].functions[1].id;
+
+            const callGroupEvents: Array<{ eventType: string; functionIds: string[] }> = [];
+            api.subscribeToEvents((event) => {
+                if (event.kind === 'callGroup') {
+                    callGroupEvents.push({
+                        eventType: event.eventType,
+                        functionIds: event.data.functionIds
+                    });
+                }
+            });
+
+            api.addConnection(func1Id, func2Id, 0);
+
+            // Should have events: delete 2 old groups, create 1 new group
+            const createEvents = callGroupEvents.filter(e => e.eventType === 'created');
+            const deleteEvents = callGroupEvents.filter(e => e.eventType === 'deleted');
+
+            expect(deleteEvents).toHaveLength(2);
+            expect(createEvents).toHaveLength(1);
+            expect(createEvents[0].functionIds.sort()).toEqual([func1Id, func2Id].sort());
         });
     });
 });
