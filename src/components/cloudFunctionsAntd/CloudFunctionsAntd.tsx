@@ -6,6 +6,7 @@ import {ConfigProvider, theme} from 'antd';
 import NamespacesPanel from './NamespacesPanel';
 import DetailsPanel from './DetailsPanel';
 import MenuPanel from './MenuPanel';
+import CallGroupPanel from './CallGroupPanel';
 import {FunctionNodeData} from './FunctionNode';
 import FunctionsFlowComponent from './FunctionsFlowComponent';
 import {api} from './api/FakeCloudKotlinFunctionsApi';
@@ -139,17 +140,22 @@ export default function CloudFunctionsAntd() {
                 </div>
 
                 {/* Left Panel */}
-                <div className="absolute top-2 left-2 bottom-2 w-[270px]">
+                <div className="absolute top-2 left-2 bottom-[170px] w-[270px]">
                     <NamespacesPanel/>
                 </div>
 
                 {/* Right Panel */}
-                <div className="absolute top-2 right-2 bottom-2 w-[270px]">
+                <div className="absolute top-2 right-2 bottom-[170px] w-[270px]">
                     <DetailsPanel
                         selectedFunction={selectedFunction}
                         onCreateFunction={handleCreateFunction}
                         onRunFunction={handleRunFunction}
                     />
+                </div>
+
+                {/* Bottom Panel */}
+                <div className="absolute bottom-2 left-2 right-2 h-[150px]">
+                    <CallGroupPanel/>
                 </div>
             </div>
         </ConfigProvider>

@@ -9,6 +9,8 @@ import {CallConnectionUtils} from '../callConnectionUtils';
 import {api} from '../api/FakeCloudKotlinFunctionsApi';
 import {dtoToNamespace} from '../dto/dtoToNamespace';
 import {canRun, formatCanRunReasons} from '../canRun';
+import {CallGroup} from '../CallGroup';
+import {computeCallGroups} from '../callGroupUtils';
 
 // Stable empty arrays to avoid creating new references
 const EMPTY_FUNCTIONS: Function[] = [];
@@ -65,6 +67,8 @@ interface AppActions {
     getSelectedFunction: () => Function | null;
     findNamespaceIdByFunctionId: (functionId: string) => string | null;
     getAllFunctions: () => Record<string, Function>;
+    getCallGroups: (namespaceId: string) => CallGroup[];
+    getCallGroupForFunction: (functionId: string) => CallGroup | null;
 }
 
 export const useStore = create<AppState & AppActions>((set, get) => ({
@@ -262,5 +266,18 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
         const map: Record<string, Function> = {};
         namespaces.forEach(ns => ns.functions.forEach(f => map[f.id] = f));
         return map;
+    },
+
+    getCallGroups: (namespaceId) => {
+        const namespace = get().namespaces.find(ns => ns.id === namespaceId);
+        if (!namespace) return [];
+        return computeCallGroups(namespace.functions, namespace.connections);
+    },
+
+    getCallGroupForFunction: (functionId) => {
+        const namespaceId = get().findNamespaceIdByFunctionId(functionId);
+        if (!namespaceId) return null;
+        const groups = get().getCallGroups(namespaceId);
+        return groups.find(g => g.functionIds.has(functionId)) || null;
     }
 }));
