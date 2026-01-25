@@ -7,12 +7,14 @@ type FunctionDetailsViewProps = {
     selectedFunction: Function | null;
     onCreateFunction: (sourceCode: string) => void;
     onRunFunction: (functionId: string) => void;
+    onDeleteFunction: (functionId: string) => void;
 };
 
 export default function FunctionDetailsView({
                                                 selectedFunction,
                                                 onCreateFunction,
-                                                onRunFunction
+                                                onRunFunction,
+                                                onDeleteFunction
                                             }: FunctionDetailsViewProps) {
     const [open, setOpen] = useState(false);
 
@@ -73,6 +75,7 @@ export default function FunctionDetailsView({
                         <Button danger
                                 disabled={selectedFunction.state !== 'idle'}
                                 style={{flex: '1 1 0'}}
+                                onClick={() => onDeleteFunction(selectedFunction.id)}
                         >
                             Delete
                         </Button>

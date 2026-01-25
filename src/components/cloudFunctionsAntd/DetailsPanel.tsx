@@ -9,9 +9,15 @@ type DetailsPanelProps = {
     selectedFunction: Function | null;
     onCreateFunction: (sourceCode: string) => void;
     onRunFunction: (functionId: string) => void;
+    onDeleteFunction: (functionId: string) => void;
 };
 
-export default function DetailsPanel({selectedFunction, onCreateFunction, onRunFunction}: DetailsPanelProps) {
+export default function DetailsPanel({
+                                         selectedFunction,
+                                         onCreateFunction,
+                                         onRunFunction,
+                                         onDeleteFunction
+                                     }: DetailsPanelProps) {
     const {selectedNamespaceId, getSelectedNamespace} = useStore();
     const selectedNamespace = selectedNamespaceId ? getSelectedNamespace() : null;
 
@@ -22,6 +28,7 @@ export default function DetailsPanel({selectedFunction, onCreateFunction, onRunF
                     selectedFunction={selectedFunction}
                     onCreateFunction={onCreateFunction}
                     onRunFunction={onRunFunction}
+                    onDeleteFunction={onDeleteFunction}
                 />
             );
         }

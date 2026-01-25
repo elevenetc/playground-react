@@ -3,18 +3,20 @@ import type {MenuProps} from 'antd';
 import {Button, Dropdown} from 'antd';
 import {AppstoreAddOutlined, InfoCircleOutlined} from '@ant-design/icons';
 import CreateNamespaceModal from './CreateNamespaceModal';
+import CreateFunctionModal from './CreateFunctionModal';
 import {api} from './api/FakeCloudKotlinFunctionsApi';
 import {useStore} from './state/store';
 
 export default function MenuPanel() {
-    const {fetchNamespaces} = useStore();
+    const {fetchNamespaces, selectedNamespaceId} = useStore();
     const [showCreateNamespaceModal, setShowCreateNamespaceModal] = useState(false);
+    const [showCreateFunctionModal, setShowCreateFunctionModal] = useState(false);
 
     const handleMenuClick: MenuProps['onClick'] = ({key}) => {
         if (key === 'namespace') {
             setShowCreateNamespaceModal(true);
         } else if (key === 'function') {
-            // TODO: Handle function creation
+            setShowCreateFunctionModal(true);
         }
     };
 
@@ -22,6 +24,16 @@ export default function MenuPanel() {
         api.createNamespace(name);
         fetchNamespaces();
         setShowCreateNamespaceModal(false);
+    };
+
+    const handleCreateFunction = (sourceCode: string) => {
+        if (!selectedNamespaceId) {
+            console.error('No namespace selected');
+            return;
+        }
+        api.createFunction(selectedNamespaceId, sourceCode);
+        fetchNamespaces();
+        setShowCreateFunctionModal(false);
     };
 
     const newItems: MenuProps['items'] = [
@@ -54,6 +66,12 @@ export default function MenuPanel() {
                 visible={showCreateNamespaceModal}
                 onOk={handleCreateNamespace}
                 onCancel={() => setShowCreateNamespaceModal(false)}
+            />
+
+            <CreateFunctionModal
+                open={showCreateFunctionModal}
+                onClose={() => setShowCreateFunctionModal(false)}
+                onCreate={handleCreateFunction}
             />
         </>
     );

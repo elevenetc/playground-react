@@ -26,6 +26,7 @@ export default function CloudFunctionsAntd() {
         getSelectedNamespaceConnections,
         getEdges,
         runFunction,
+        deleteFunction,
         removeConnection
     } = useStore();
 
@@ -108,6 +109,16 @@ export default function CloudFunctionsAntd() {
         api.createFunction(selectedNamespaceId, sourceCode);
     };
 
+    const handleDeleteFunction = (functionId: string) => {
+        if (!selectedNamespaceId) {
+            console.error('No namespace selected');
+            return;
+        }
+        deleteFunction(selectedNamespaceId, functionId);
+        api.deleteFunction(functionId);
+        selectFunction(null);
+    };
+
     const handlePaneClick = () => {
         selectFunction(null);
     };
@@ -150,6 +161,7 @@ export default function CloudFunctionsAntd() {
                         selectedFunction={selectedFunction}
                         onCreateFunction={handleCreateFunction}
                         onRunFunction={handleRunFunction}
+                        onDeleteFunction={handleDeleteFunction}
                     />
                 </div>
 
