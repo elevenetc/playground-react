@@ -8,6 +8,7 @@ import {ConnectionType} from '../state/ConnectionType';
 import {CallConnectionUtils} from '../callConnectionUtils';
 import {api} from '../api/FakeCloudKotlinFunctionsApi';
 import {dtoToNamespace} from '../dto/dtoToNamespace';
+import {canRun, formatCanRunReasons} from '../canRun';
 
 // Stable empty arrays to avoid creating new references
 const EMPTY_FUNCTIONS: Function[] = [];
@@ -140,9 +141,33 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
 
     runFunction: (functionId) => {
         const namespaceId = get().findNamespaceIdByFunctionId(functionId);
-        if (namespaceId) {
-            get().setFunctionState(namespaceId, functionId, 'running');
+        if (!namespaceId) {
+            console.error(`Cannot run function ${functionId}: namespace not found`);
+            return;
         }
+
+        const namespace = get().namespaces.find(ns => ns.id === namespaceId);
+        if (!namespace) {
+            console.error(`Cannot run function ${functionId}: namespace not found`);
+            return;
+        }
+
+        const func = namespace.functions.find(f => f.id === functionId);
+        if (!func) {
+            console.error(`Cannot run function ${functionId}: function not found`);
+            return;
+        }
+
+        const functionsMap: Record<string, Function> = {};
+        namespace.functions.forEach(f => functionsMap[f.id] = f);
+
+        const result = canRun(func, functionsMap, namespace.connections);
+        if (!result.can) {
+            console.error(`Cannot run function "${func.name}": ${formatCanRunReasons(result.reasons)}`);
+            return;
+        }
+
+        get().setFunctionState(namespaceId, functionId, 'running');
         api.runFunction(functionId);
     },
 
