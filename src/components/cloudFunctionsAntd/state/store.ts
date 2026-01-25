@@ -81,7 +81,7 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
 
     // UI actions
     selectFunction: (id) => set({selectedFunctionId: id}),
-    selectNamespace: (id) => set({selectedNamespaceId: id}),
+    selectNamespace: (id) => set({selectedNamespaceId: id, selectedFunctionId: null}),
     setNamespaceState: (state) => set({namespaceState: state}),
     setConnectingInfo: (info) => set({connectingInfo: info}),
 

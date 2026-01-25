@@ -1,6 +1,5 @@
 "use client";
 
-import {Tabs} from 'antd';
 import {Function} from './Function';
 import {useStore} from './state/store';
 import NamespaceDetailsView from './NamespaceDetailsView';
@@ -16,38 +15,34 @@ export default function DetailsPanel({selectedFunction, onCreateFunction, onRunF
     const {selectedNamespaceId, getSelectedNamespace} = useStore();
     const selectedNamespace = selectedNamespaceId ? getSelectedNamespace() : null;
 
-    const items = [
-        {
-            key: 'namespace',
-            label: 'Namespace',
-            children: (
-                <NamespaceDetailsView
-                    selectedNamespace={selectedNamespace}
-                    onCreateFunction={onCreateFunction}
-                />
-            ),
-        },
-        {
-            key: 'function',
-            label: 'Function',
-            children: (
+    const renderContent = () => {
+        if (selectedFunction) {
+            return (
                 <FunctionDetailsView
                     selectedFunction={selectedFunction}
                     onCreateFunction={onCreateFunction}
                     onRunFunction={onRunFunction}
                 />
-            ),
-        },
-    ];
+            );
+        }
+        if (selectedNamespace) {
+            return (
+                <NamespaceDetailsView
+                    selectedNamespace={selectedNamespace}
+                    onCreateFunction={onCreateFunction}
+                />
+            );
+        }
+        return (
+            <div className="flex items-center justify-center h-full text-gray-400">
+                Select namespace or function
+            </div>
+        );
+    };
 
     return (
-        <div className="h-full bg-gray-800/90 backdrop-blur-sm rounded-lg overflow-auto">
-            <Tabs
-                defaultActiveKey="namespace"
-                items={items}
-                className="h-full"
-                style={{padding: '0 16px'}}
-            />
+        <div className="h-full bg-gray-800/90 backdrop-blur-sm rounded-lg overflow-auto p-4">
+            {renderContent()}
         </div>
     );
 }
