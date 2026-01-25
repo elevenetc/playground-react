@@ -1,56 +1,201 @@
 import {Function, FunctionState} from './Function';
 import {FunctionConnection} from './FunctionConnection';
+import {evaluateKotlinFunction} from './kotlinToJs';
+import {canRun, formatCanRunReasons} from './canRun';
 
 export type FunctionStateChangeEvent = {
     functionId: string;
     newState: FunctionState;
+    result?: unknown;
+    error?: string;
 };
 
 export class FakeFunctionRunner {
     private functions: Map<string, Function>;
     private connections: FunctionConnection[];
     private subscribers: Array<(event: FunctionStateChangeEvent) => void>;
+    private functionResults: Map<string, unknown>;
+    private functionInputs: Map<string, Map<number, unknown>>;
+    private pendingInputs: Map<string, Set<number>>;
 
     constructor(functions: Map<string, Function>, connections: FunctionConnection[]) {
         this.functions = functions;
         this.connections = connections;
         this.subscribers = [];
+        this.functionResults = new Map();
+        this.functionInputs = new Map();
+        this.pendingInputs = new Map();
     }
 
     subscribeOnFunctionStateChange(callback: (event: FunctionStateChangeEvent) => void): void {
         this.subscribers.push(callback);
     }
 
+    setInput(functionId: string, argIndex: number, value: unknown): void {
+        if (!this.functionInputs.has(functionId)) {
+            this.functionInputs.set(functionId, new Map());
+        }
+        this.functionInputs.get(functionId)!.set(argIndex, value);
+
+        this.pendingInputs.get(functionId)?.delete(argIndex);
+    }
+
+    getResult(functionId: string): unknown {
+        return this.functionResults.get(functionId);
+    }
+
     run(functionId: string): void {
         const func = this.functions.get(functionId);
-
         if (!func) {
             throw new Error(`Function with id ${functionId} not found`);
         }
 
-        if (func.state !== 'idle') {
-            throw new Error(`Function ${functionId} is not idle (current state: ${func.state})`);
+        const functionsRecord = Object.fromEntries(this.functions);
+        const canRunResult = canRun(func, functionsRecord, this.connections);
+
+        if (!canRunResult.can) {
+            throw new Error(`Cannot run: ${formatCanRunReasons(canRunResult.reasons)}`);
         }
 
-        // Start running immediately
-        this.notifySubscribers({ functionId, newState: 'running' });
+        const rootIds = this.findRootsForFunction(functionId);
+        this.initializePendingInputs();
 
-        // Simulate function execution for 1 second
-        setTimeout(() => {
-            this.notifySubscribers({ functionId, newState: 'idle' });
+        for (const rootId of rootIds) {
+            this.executeFunction(rootId);
+        }
+    }
 
-            // Check for outgoing calls and run them
-            const outgoingCalls = this.connections.filter(conn => conn.outFunctionId === functionId);
-            outgoingCalls.forEach(call => {
-                const targetFunc = this.functions.get(call.inputArgumentId);
-                if (targetFunc && targetFunc.state === 'idle') {
-                    this.run(call.inputArgumentId);
+    private findRootsForFunction(functionId: string): string[] {
+        const connectedIds = this.collectConnectedFunctions(functionId);
+        const hasIncoming = new Set<string>();
+
+        for (const conn of this.connections) {
+            if (connectedIds.has(conn.outFunctionId) && connectedIds.has(conn.targetFunctionId)) {
+                hasIncoming.add(conn.targetFunctionId);
+            }
+        }
+
+        return Array.from(connectedIds).filter(id => !hasIncoming.has(id));
+    }
+
+    private collectConnectedFunctions(startId: string): Set<string> {
+        const connected = new Set<string>();
+        const queue = [startId];
+
+        while (queue.length > 0) {
+            const currentId = queue.shift()!;
+            if (connected.has(currentId)) continue;
+            connected.add(currentId);
+
+            for (const conn of this.connections) {
+                if (conn.outFunctionId === currentId && !connected.has(conn.targetFunctionId)) {
+                    queue.push(conn.targetFunctionId);
                 }
-            });
-        }, 1000);
+                if (conn.targetFunctionId === currentId && !connected.has(conn.outFunctionId)) {
+                    queue.push(conn.outFunctionId);
+                }
+            }
+        }
+
+        return connected;
+    }
+
+    private initializePendingInputs(): void {
+        this.pendingInputs.clear();
+
+        for (const [funcId, func] of this.functions) {
+            const argCount = func.arguments.size;
+            if (argCount > 0) {
+                const pending = new Set<number>();
+                for (let i = 0; i < argCount; i++) {
+                    const hasConnection = this.connections.some(
+                        c => c.targetFunctionId === funcId && c.targetArgIndex === i
+                    );
+                    if (hasConnection && !this.functionInputs.get(funcId)?.has(i)) {
+                        pending.add(i);
+                    }
+                }
+                if (pending.size > 0) {
+                    this.pendingInputs.set(funcId, pending);
+                }
+            }
+        }
+    }
+
+    private canExecute(functionId: string): boolean {
+        const pending = this.pendingInputs.get(functionId);
+        return !pending || pending.size === 0;
+    }
+
+    private executeFunction(functionId: string): void {
+        const func = this.functions.get(functionId);
+        if (!func || func.state !== 'idle') return;
+        if (!this.canExecute(functionId)) return;
+
+        this.notifySubscribers({functionId, newState: 'running'});
+
+        setTimeout(() => {
+            try {
+                const result = this.evaluateFunction(func);
+                this.functionResults.set(functionId, result);
+                this.notifySubscribers({functionId, newState: 'idle', result});
+                this.propagateResult(functionId, result);
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                this.notifySubscribers({functionId, newState: 'idle', error: errorMessage});
+            }
+        }, 100);
+    }
+
+    private evaluateFunction(func: Function): unknown {
+        const paramNames = Array.from(func.arguments.keys());
+        const inputs = this.functionInputs.get(func.id) || new Map();
+
+        const paramValues = paramNames.map((name, index) => {
+            const value = inputs.get(index);
+            return value !== undefined ? value : getDefaultValue(func.arguments.get(name)!);
+        });
+
+        return evaluateKotlinFunction(func.sourceCode, paramNames, paramValues);
+    }
+
+    private propagateResult(functionId: string, result: unknown): void {
+        const outgoingConnections = this.connections.filter(c => c.outFunctionId === functionId);
+
+        for (const conn of outgoingConnections) {
+            this.setInput(conn.targetFunctionId, conn.targetArgIndex, result);
+
+            if (this.canExecute(conn.targetFunctionId)) {
+                const targetFunc = this.functions.get(conn.targetFunctionId);
+                if (targetFunc && targetFunc.state === 'idle') {
+                    this.executeFunction(conn.targetFunctionId);
+                }
+            }
+        }
     }
 
     private notifySubscribers(event: FunctionStateChangeEvent): void {
         this.subscribers.forEach(subscriber => subscriber(event));
+    }
+}
+
+function getDefaultValue(typeName: string): unknown {
+    switch (typeName) {
+        case 'Int':
+        case 'Long':
+        case 'Short':
+        case 'Byte':
+            return 0;
+        case 'Float':
+        case 'Double':
+            return 0.0;
+        case 'Boolean':
+            return false;
+        case 'String':
+            return '';
+        case 'Char':
+            return '';
+        default:
+            return null;
     }
 }

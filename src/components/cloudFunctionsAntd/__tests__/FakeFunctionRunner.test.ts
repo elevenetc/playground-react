@@ -43,9 +43,9 @@ describe('FakeFunctionRunner', () => {
         // Should start running
         expect(events[0]).toEqual({functionId: '1', newState: 'running'});
 
-        // After 1s should be idle
-        jest.advanceTimersByTime(1000);
-        expect(events[1]).toEqual({functionId: '1', newState: 'idle'});
+        // After execution should be idle with result
+        jest.advanceTimersByTime(100);
+        expect(events[1]).toEqual({functionId: '1', newState: 'idle', result: 1});
 
         expect(events).toHaveLength(2);
     });
@@ -63,16 +63,16 @@ describe('FakeFunctionRunner', () => {
         // First function starts
         expect(events[0]).toEqual({functionId: '1', newState: 'running'});
 
-        // After 1s first completes
-        jest.advanceTimersByTime(1000);
-        expect(events[1]).toEqual({functionId: '1', newState: 'idle'});
+        // After execution first completes with result
+        jest.advanceTimersByTime(100);
+        expect(events[1]).toEqual({functionId: '1', newState: 'idle', result: 1});
 
-        // Second function starts
+        // Second function starts (receives result from first)
         expect(events[2]).toEqual({functionId: '2', newState: 'running'});
 
-        // After 1s second completes
-        jest.advanceTimersByTime(1000);
-        expect(events[3]).toEqual({functionId: '2', newState: 'idle'});
+        // After execution second completes with result
+        jest.advanceTimersByTime(100);
+        expect(events[3]).toEqual({functionId: '2', newState: 'idle', result: '1'});
 
         expect(events).toHaveLength(4);
     });
@@ -96,5 +96,98 @@ describe('FakeFunctionRunner', () => {
         expect(functionIds).not.toContain('3');
 
         expect(events).toHaveLength(4); // func1: running, idle, func2: running, idle
+    });
+
+    it('throws error when function has unconnected arguments', () => {
+        // func2 has argument 'x' but no connection
+        expect(() => runner.run('2')).toThrow('Cannot run');
+        expect(() => runner.run('2')).toThrow('unconnected argument');
+    });
+
+    it('executes diamond pattern correctly', () => {
+        // A -> B -> D
+        // A -> C -> D
+        const funcA = createFunction('A', 'getNum', [], 'Int', 'fun getNum(): Int { return 10 }');
+        const funcB = createFunction('B', 'double', [['x', 'Int']], 'Int', 'fun double(x: Int): Int { return x * 2 }');
+        const funcC = createFunction('C', 'triple', [['x', 'Int']], 'Int', 'fun triple(x: Int): Int { return x * 3 }');
+        const funcD = createFunction('D', 'add', [['a', 'Int'], ['b', 'Int']], 'Int', 'fun add(a: Int, b: Int): Int { return a + b }');
+
+        functions.clear();
+        functions.set('A', funcA);
+        functions.set('B', funcB);
+        functions.set('C', funcC);
+        functions.set('D', funcD);
+
+        connections.length = 0;
+        connections.push(new FunctionConnection('A', 'B', 0));
+        connections.push(new FunctionConnection('A', 'C', 0));
+        connections.push(new FunctionConnection('B', 'D', 0));
+        connections.push(new FunctionConnection('C', 'D', 1));
+
+        runner = new FakeFunctionRunner(functions, connections);
+
+        const events: FunctionStateChangeEvent[] = [];
+        runner.subscribeOnFunctionStateChange(e => events.push(e));
+
+        runner.run('D');
+        jest.runAllTimers();
+
+        // A produces 10
+        // B receives 10, produces 20
+        // C receives 10, produces 30
+        // D receives 20 and 30, produces 50
+        const dResult = events.find(e => e.functionId === 'D' && e.newState === 'idle');
+        expect(dResult?.result).toBe(50);
+    });
+
+    it('starts from root when run is called on middle function', () => {
+        connections.push(new FunctionConnection('1', '2'));
+
+        const events: FunctionStateChangeEvent[] = [];
+        runner.subscribeOnFunctionStateChange(e => events.push(e));
+
+        // Run on func2, but func1 should start first as it's the root
+        runner.run('2');
+
+        expect(events[0]).toEqual({functionId: '1', newState: 'running'});
+
+        jest.runAllTimers();
+
+        // Both should execute
+        const functionIds = events.map(e => e.functionId);
+        expect(functionIds).toContain('1');
+        expect(functionIds).toContain('2');
+    });
+
+    it('waits for all inputs before executing function with multiple arguments', () => {
+        const source1 = createFunction('s1', 'getA', [], 'Int', 'fun getA(): Int { return 5 }');
+        const source2 = createFunction('s2', 'getB', [], 'Int', 'fun getB(): Int { return 3 }');
+        const target = createFunction('t', 'multiply', [['a', 'Int'], ['b', 'Int']], 'Int', 'fun multiply(a: Int, b: Int): Int { return a * b }');
+
+        functions.clear();
+        functions.set('s1', source1);
+        functions.set('s2', source2);
+        functions.set('t', target);
+
+        connections.length = 0;
+        connections.push(new FunctionConnection('s1', 't', 0));
+        connections.push(new FunctionConnection('s2', 't', 1));
+
+        runner = new FakeFunctionRunner(functions, connections);
+
+        const events: FunctionStateChangeEvent[] = [];
+        runner.subscribeOnFunctionStateChange(e => events.push(e));
+
+        runner.run('t');
+
+        // Both sources start immediately (they are roots)
+        expect(events.filter(e => e.newState === 'running').map(e => e.functionId).sort())
+            .toEqual(['s1', 's2']);
+
+        jest.runAllTimers();
+
+        // Target should execute after both sources complete
+        const targetResult = events.find(e => e.functionId === 't' && e.newState === 'idle');
+        expect(targetResult?.result).toBe(15); // 5 * 3
     });
 });
