@@ -448,7 +448,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
                 });
 
                 ns.connections.forEach(connDto => {
-                    this.connections.push(new FunctionConnection(connDto.outFunctionId, connDto.inputArgumentId, 0));
+                    this.connections.push(FunctionConnection.fromArgumentId(connDto.outFunctionId, connDto.inputArgumentId));
                 });
             });
         }
@@ -466,7 +466,7 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
 
             const functionIdsInNamespace = new Set(namespace.functions.map(f => f.id));
             namespace.connections = this.connections
-                .filter(c => functionIdsInNamespace.has(c.outFunctionId) && functionIdsInNamespace.has(c.inputArgumentId))
+                .filter(c => functionIdsInNamespace.has(c.outFunctionId) && functionIdsInNamespace.has(c.targetFunctionId))
                 .map(c => ({
                     outFunctionId: c.outFunctionId,
                     inputArgumentId: c.inputArgumentId

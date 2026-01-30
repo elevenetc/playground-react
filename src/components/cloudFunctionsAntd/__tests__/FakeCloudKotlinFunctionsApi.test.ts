@@ -142,7 +142,7 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             const updatedNamespaces = api.getNamespaces();
             expect(updatedNamespaces[0].connections).toHaveLength(1);
             expect(updatedNamespaces[0].connections[0].outFunctionId).toBe(func1Id);
-            expect(updatedNamespaces[0].connections[0].inputArgumentId).toBe(func2Id);
+            expect(updatedNamespaces[0].connections[0].inputArgumentId).toBe(`${func2Id}-arg-0`);
         });
     });
 

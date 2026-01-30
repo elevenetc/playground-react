@@ -7,7 +7,7 @@ import {FunctionConnection} from "@/components/cloudFunctionsAntd/FunctionConnec
 export const dtoToNamespace = (dto: NamespaceDto): Namespace => {
     const functions: Function[] = dto.functions.map(fun => dtoToFunction(fun));
     const connections: FunctionConnection[] = dto.connections.map(conn =>
-        new FunctionConnection(conn.outFunctionId, conn.inputArgumentId, 0)
+        FunctionConnection.fromArgumentId(conn.outFunctionId, conn.inputArgumentId)
     );
     return {
         id: dto.id,
