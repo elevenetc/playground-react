@@ -70,6 +70,9 @@ function translateExpression(expr: string): string {
     // Kotlin Long literals: 1L -> 1
     result = result.replace(/(\d+)L\b/g, '$1');
 
+    // Kotlin println -> console.log
+    result = result.replace(/\bprintln\s*\(/g, 'console.log(');
+
     return result;
 }
 
