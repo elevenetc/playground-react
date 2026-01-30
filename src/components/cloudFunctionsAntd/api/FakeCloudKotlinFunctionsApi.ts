@@ -4,6 +4,8 @@ import {
     CloudKotlinFunctionsApi,
     ErrorDto,
     EventCallback,
+    ExecutionLogDto,
+    ExecutionLogEventType,
     FunctionDto,
     TypeDto
 } from './CloudKotlinFunctionsApi';
@@ -68,8 +70,29 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     }
 
     runFunction(functionId: string): void {
+        const callGroup = this.findCallGroupForFunction(functionId);
+        if (!callGroup) {
+            throw new Error(`No call group found for function ${functionId}`);
+        }
+
+        const runId = crypto.randomUUID();
+
+        // Emit call-start
+        this.emitExecutionLogEvent('call-start', {
+            callGroupId: callGroup.id,
+            runId,
+            timestamp: new Date().toISOString()
+        });
+
         try {
-            this.runner.run(functionId);
+            this.runner.run(functionId, () => {
+                // Emit call-end when all functions complete
+                this.emitExecutionLogEvent('call-end', {
+                    callGroupId: callGroup.id,
+                    runId,
+                    timestamp: new Date().toISOString()
+                });
+            });
         } catch (error) {
             const func = this.functions.get(functionId);
             if (func) {
@@ -79,8 +102,26 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
                 };
 
                 this.emitFunctionEvent('state-changed', this.functionToDto(func), errorDto);
+
+                // Emit call-end with error
+                this.emitExecutionLogEvent('call-end', {
+                    callGroupId: callGroup.id,
+                    runId,
+                    timestamp: new Date().toISOString(),
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                });
             }
         }
+    }
+
+    subscribeToEvents(callback: EventCallback): () => void {
+        this.eventSubscribers.push(callback);
+        return () => {
+            const index = this.eventSubscribers.indexOf(callback);
+            if (index !== -1) {
+                this.eventSubscribers.splice(index, 1);
+            }
+        };
     }
 
     createFunction(namespaceId: string, sourceCode: string): void {
@@ -171,8 +212,13 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
         }
     }
 
-    subscribeToEvents(callback: EventCallback): void {
-        this.eventSubscribers.push(callback);
+    private findCallGroupForFunction(functionId: string): CallGroupDto | undefined {
+        for (const group of this.callGroups.values()) {
+            if (group.functionIds.includes(functionId)) {
+                return group;
+            }
+        }
+        return undefined;
     }
 
     private emitFunctionEvent(eventType: 'created' | 'updated' | 'deleted' | 'state-changed', data: FunctionDto, error: ErrorDto | null): void {
@@ -189,6 +235,16 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
     private emitCallGroupEvent(eventType: 'created' | 'updated' | 'deleted', data: CallGroupDto): void {
         const event: ApiEvent = {
             kind: 'callGroup',
+            eventId: crypto.randomUUID(),
+            eventType,
+            data
+        };
+        this.eventSubscribers.forEach(cb => cb(event));
+    }
+
+    private emitExecutionLogEvent(eventType: ExecutionLogEventType, data: ExecutionLogDto): void {
+        const event: ApiEvent = {
+            kind: 'executionLog',
             eventId: crypto.randomUUID(),
             eventType,
             data
@@ -442,6 +498,32 @@ export class FakeCloudKotlinFunctionsApi implements CloudKotlinFunctionsApi {
                 if (namespaceId) {
                     this.recomputeCallGroupsForNamespace(namespaceId);
                 }
+            }
+        });
+
+        this.runner.subscribeOnExecution(event => {
+            const callGroup = this.findCallGroupForFunction(event.functionId);
+            if (!callGroup) return;
+
+            if (event.type === 'function-start') {
+                this.emitExecutionLogEvent('function-call-start', {
+                    callGroupId: callGroup.id,
+                    runId: '', // Will be set by active run context
+                    timestamp: new Date().toISOString(),
+                    functionId: event.functionId,
+                    functionName: event.functionName,
+                    parameters: event.parameters
+                });
+            } else if (event.type === 'function-end') {
+                this.emitExecutionLogEvent('function-call-end', {
+                    callGroupId: callGroup.id,
+                    runId: '',
+                    timestamp: new Date().toISOString(),
+                    functionId: event.functionId,
+                    functionName: event.functionName,
+                    returnValue: event.returnValue,
+                    error: event.error
+                });
             }
         });
     }

@@ -11,6 +11,7 @@ import {dtoToNamespace} from '../dto/dtoToNamespace';
 import {dtoToCallGroup} from '../dto/dtoToCallGroup';
 import {canRun, formatCanRunReasons} from '../canRun';
 import {CallGroup} from '../CallGroup';
+import {ExecutionLogEntry} from '../ExecutionLog';
 
 // Stable empty arrays to avoid creating new references
 const EMPTY_FUNCTIONS: Function[] = [];
@@ -38,6 +39,9 @@ interface AppState {
 
     // Call groups state
     callGroups: Map<string, CallGroup>;
+
+    // Execution logs state
+    executionLogs: ExecutionLogEntry[];
 }
 
 interface AppActions {
@@ -64,6 +68,11 @@ interface AppActions {
     // Call group actions
     upsertCallGroup: (callGroup: CallGroup) => void;
     deleteCallGroup: (callGroupId: string) => void;
+
+    // Execution log actions
+    addExecutionLog: (log: ExecutionLogEntry) => void;
+    clearExecutionLogs: (callGroupId?: string) => void;
+    getExecutionLogsForCallGroup: (callGroupId: string) => ExecutionLogEntry[];
 
     // Derived getters
     getSelectedNamespace: () => Namespace | null;
@@ -92,6 +101,9 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
 
     // Initial call groups state
     callGroups: new Map(),
+
+    // Initial execution logs state
+    executionLogs: [],
 
     // UI actions
     selectFunction: (id) => set({selectedFunctionId: id}),
@@ -246,6 +258,21 @@ export const useStore = create<AppState & AppActions>((set, get) => ({
         newMap.delete(callGroupId);
         return {callGroups: newMap};
     }),
+
+    // Execution log actions
+    addExecutionLog: (log) => set((state) => ({
+        executionLogs: [...state.executionLogs, log]
+    })),
+
+    clearExecutionLogs: (callGroupId) => set((state) => ({
+        executionLogs: callGroupId
+            ? state.executionLogs.filter(l => l.callGroupId !== callGroupId)
+            : []
+    })),
+
+    getExecutionLogsForCallGroup: (callGroupId) => {
+        return get().executionLogs.filter(l => l.callGroupId === callGroupId);
+    },
 
     // Derived getters
     getSelectedNamespace: () => {

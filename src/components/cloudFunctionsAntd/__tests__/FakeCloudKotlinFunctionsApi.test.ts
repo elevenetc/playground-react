@@ -120,19 +120,8 @@ describe('FakeCloudKotlinFunctionsApi', () => {
             expect(events[1].state).toBe('idle');
         });
 
-        it('should emit error event when function not found', () => {
-            let errorReceived = false;
-
-            api.subscribeToEvents((event) => {
-                if (event.kind === 'function' && event.error) {
-                    errorReceived = true;
-                    expect(event.error.message).toContain('not found');
-                }
-            });
-
-            api.runFunction('nonexistent-id');
-
-            expect(errorReceived).toBe(false); // Error is thrown, not emitted
+        it('should throw error when function not found', () => {
+            expect(() => api.runFunction('nonexistent-id')).toThrow('No call group found');
         });
     });
 

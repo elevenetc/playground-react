@@ -68,6 +68,16 @@ describe('kotlinToJs', () => {
 
             expect(result.success).toBe(false);
         });
+
+        it('should translate println to console.log', () => {
+            const source = 'fun log(msg: String): Unit { println(msg) }';
+            const result = translateKotlinToJs(source, ['msg']);
+
+            expect(result.success).toBe(true);
+            if (result.success) {
+                expect(result.jsCode).toBe('return console.log(msg);');
+            }
+        });
     });
 
     describe('evaluateKotlinFunction', () => {

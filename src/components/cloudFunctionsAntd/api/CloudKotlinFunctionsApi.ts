@@ -17,17 +17,30 @@ export interface CloudKotlinFunctionsApi {
 
     removeConnection(outFunctionId: string, targetFunctionId: string, targetArgIndex: number): void
 
-    subscribeToEvents(callback: EventCallback): void
+    subscribeToEvents(callback: EventCallback): () => void
 }
 
 export type FunctionEventType = 'created' | 'updated' | 'deleted' | 'state-changed';
 export type CallGroupEventType = 'created' | 'updated' | 'deleted';
+export type ExecutionLogEventType = 'call-start' | 'function-call-start' | 'function-call-end' | 'call-end';
 
 export type ApiEvent =
     | { kind: 'function'; eventId: string; eventType: FunctionEventType; data: FunctionDto; error: ErrorDto | null }
-    | { kind: 'callGroup'; eventId: string; eventType: CallGroupEventType; data: CallGroupDto };
+    | { kind: 'callGroup'; eventId: string; eventType: CallGroupEventType; data: CallGroupDto }
+    | { kind: 'executionLog'; eventId: string; eventType: ExecutionLogEventType; data: ExecutionLogDto };
 
 export type EventCallback = (event: ApiEvent) => void;
+
+export type ExecutionLogDto = {
+    callGroupId: string;
+    runId: string;
+    timestamp: string;
+    functionId?: string;
+    functionName?: string;
+    parameters?: Record<string, unknown>;
+    returnValue?: unknown;
+    error?: string;
+};
 
 export type ErrorDto = {
     id: string;

@@ -77,7 +77,7 @@ export default function CloudFunctionsAntd() {
     // Subscribe to events when namespace changes
     useEffect(() => {
         if (selectedNamespaceId) {
-            subscribeToEvents(api, selectedNamespaceId);
+            return subscribeToEvents(api, selectedNamespaceId);
         }
     }, [selectedNamespaceId]);
 

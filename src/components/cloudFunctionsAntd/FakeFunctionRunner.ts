@@ -3,6 +3,11 @@ import {FunctionConnection} from './FunctionConnection';
 import {evaluateKotlinFunction} from './kotlinToJs';
 import {canRun, formatCanRunReasons} from './canRun';
 
+export type FunctionExecutionEvent =
+    | { type: 'state-change'; functionId: string; functionName: string; newState: FunctionState }
+    | { type: 'function-start'; functionId: string; functionName: string; parameters: Record<string, unknown> }
+    | { type: 'function-end'; functionId: string; functionName: string; returnValue: unknown; error?: string };
+
 export type FunctionStateChangeEvent = {
     functionId: string;
     newState: FunctionState;
@@ -10,25 +15,38 @@ export type FunctionStateChangeEvent = {
     error?: string;
 };
 
+type RunContext = {
+    runId: string;
+    pendingFunctions: Set<string>;
+    onComplete: () => void;
+};
+
 export class FakeFunctionRunner {
     private functions: Map<string, Function>;
     private connections: FunctionConnection[];
-    private subscribers: Array<(event: FunctionStateChangeEvent) => void>;
+    private stateSubscribers: Array<(event: FunctionStateChangeEvent) => void>;
+    private executionSubscribers: Array<(event: FunctionExecutionEvent) => void>;
     private functionResults: Map<string, unknown>;
     private functionInputs: Map<string, Map<number, unknown>>;
     private pendingInputs: Map<string, Set<number>>;
+    private activeRun: RunContext | null = null;
 
     constructor(functions: Map<string, Function>, connections: FunctionConnection[]) {
         this.functions = functions;
         this.connections = connections;
-        this.subscribers = [];
+        this.stateSubscribers = [];
+        this.executionSubscribers = [];
         this.functionResults = new Map();
         this.functionInputs = new Map();
         this.pendingInputs = new Map();
     }
 
     subscribeOnFunctionStateChange(callback: (event: FunctionStateChangeEvent) => void): void {
-        this.subscribers.push(callback);
+        this.stateSubscribers.push(callback);
+    }
+
+    subscribeOnExecution(callback: (event: FunctionExecutionEvent) => void): void {
+        this.executionSubscribers.push(callback);
     }
 
     setInput(functionId: string, argIndex: number, value: unknown): void {
@@ -44,7 +62,7 @@ export class FakeFunctionRunner {
         return this.functionResults.get(functionId);
     }
 
-    run(functionId: string): void {
+    run(functionId: string, onComplete?: () => void): string {
         const func = this.functions.get(functionId);
         if (!func) {
             throw new Error(`Function with id ${functionId} not found`);
@@ -57,12 +75,24 @@ export class FakeFunctionRunner {
             throw new Error(`Cannot run: ${formatCanRunReasons(canRunResult.reasons)}`);
         }
 
+        const runId = crypto.randomUUID();
+        const connectedFunctions = this.collectConnectedFunctions(functionId);
+
+        this.activeRun = {
+            runId,
+            pendingFunctions: new Set(connectedFunctions),
+            onComplete: onComplete || (() => {
+            })
+        };
+
         const rootIds = this.findRootsForFunction(functionId);
         this.initializePendingInputs();
 
         for (const rootId of rootIds) {
             this.executeFunction(rootId);
         }
+
+        return runId;
     }
 
     private findRootsForFunction(functionId: string): string[] {
@@ -132,19 +162,59 @@ export class FakeFunctionRunner {
         if (!func || func.state !== 'idle') return;
         if (!this.canExecute(functionId)) return;
 
-        this.notifySubscribers({functionId, newState: 'running'});
+        const parameters = this.getParametersForFunction(func);
+
+        this.notifyStateSubscribers({functionId, newState: 'running'});
+        this.notifyExecutionSubscribers({
+            type: 'function-start',
+            functionId,
+            functionName: func.name,
+            parameters
+        });
 
         setTimeout(() => {
             try {
                 const result = this.evaluateFunction(func);
                 this.functionResults.set(functionId, result);
-                this.notifySubscribers({functionId, newState: 'idle', result});
+
+                this.notifyExecutionSubscribers({
+                    type: 'function-end',
+                    functionId,
+                    functionName: func.name,
+                    returnValue: result
+                });
+                this.notifyStateSubscribers({functionId, newState: 'idle', result});
+
+                this.markFunctionComplete(functionId);
                 this.propagateResult(functionId, result);
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                this.notifySubscribers({functionId, newState: 'idle', error: errorMessage});
+
+                this.notifyExecutionSubscribers({
+                    type: 'function-end',
+                    functionId,
+                    functionName: func.name,
+                    returnValue: undefined,
+                    error: errorMessage
+                });
+                this.notifyStateSubscribers({functionId, newState: 'idle', error: errorMessage});
+
+                this.markFunctionComplete(functionId);
             }
         }, 100);
+    }
+
+    private getParametersForFunction(func: Function): Record<string, unknown> {
+        const paramNames = Array.from(func.arguments.keys());
+        const inputs = this.functionInputs.get(func.id) || new Map();
+        const parameters: Record<string, unknown> = {};
+
+        paramNames.forEach((name, index) => {
+            const value = inputs.get(index);
+            parameters[name] = value !== undefined ? value : getDefaultValue(func.arguments.get(name)!);
+        });
+
+        return parameters;
     }
 
     private evaluateFunction(func: Function): unknown {
@@ -157,6 +227,16 @@ export class FakeFunctionRunner {
         });
 
         return evaluateKotlinFunction(func.sourceCode, paramNames, paramValues);
+    }
+
+    private markFunctionComplete(functionId: string): void {
+        if (this.activeRun) {
+            this.activeRun.pendingFunctions.delete(functionId);
+            if (this.activeRun.pendingFunctions.size === 0) {
+                this.activeRun.onComplete();
+                this.activeRun = null;
+            }
+        }
     }
 
     private propagateResult(functionId: string, result: unknown): void {
@@ -174,8 +254,12 @@ export class FakeFunctionRunner {
         }
     }
 
-    private notifySubscribers(event: FunctionStateChangeEvent): void {
-        this.subscribers.forEach(subscriber => subscriber(event));
+    private notifyStateSubscribers(event: FunctionStateChangeEvent): void {
+        this.stateSubscribers.forEach(subscriber => subscriber(event));
+    }
+
+    private notifyExecutionSubscribers(event: FunctionExecutionEvent): void {
+        this.executionSubscribers.forEach(subscriber => subscriber(event));
     }
 }
 

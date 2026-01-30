@@ -1,22 +1,25 @@
 import {CloudKotlinFunctionsApi} from '../api/CloudKotlinFunctionsApi';
 import {dtoToFunction} from '../dto/dtoToFunction';
 import {dtoToCallGroup} from '../dto/dtoToCallGroup';
+import {dtoToExecutionLog} from '../dto/dtoToExecutionLog';
 import {useStore} from './store';
 
 export function subscribeToEvents(
     api: CloudKotlinFunctionsApi,
     defaultNamespaceId: string
-) {
+): () => void {
     const {
         addFunction,
         deleteFunction,
         setFunctionState,
         findNamespaceIdByFunctionId,
         upsertCallGroup,
-        deleteCallGroup
+        deleteCallGroup,
+        addExecutionLog
     } = useStore.getState();
 
-    api.subscribeToEvents((event) => {
+    return api.subscribeToEvents((event) => {
+
         if (event.kind === 'function') {
             const {eventType, data: functionDto, error} = event;
 
@@ -59,6 +62,10 @@ export function subscribeToEvents(
                     deleteCallGroup(callGroupDto.id);
                     break;
             }
+        } else if (event.kind === 'executionLog') {
+            const {eventId, eventType, data} = event;
+            const logEntry = dtoToExecutionLog(eventId, eventType, data);
+            addExecutionLog(logEntry);
         }
     });
 }
